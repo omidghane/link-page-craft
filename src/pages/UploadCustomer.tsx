@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import delinexLogo from "@/assets/delinex-logo.png";
 
 const UploadCustomer = () => {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ const UploadCustomer = () => {
         <div className="bg-card rounded-lg shadow-2xl p-8 border border-border">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-2">DELINEX</h1>
+            <img src={delinexLogo} alt="Delinex Logo" className="h-24 mx-auto mb-2" />
             <p className="text-muted-foreground italic">Next Generation of Logistics</p>
           </div>
 
