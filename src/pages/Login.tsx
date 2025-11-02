@@ -15,13 +15,13 @@ const Login = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("ورود موفق!");
-    navigate("/dashboard");
+    navigate("/upload-customer");
   };
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("ثبت‌نام موفق!");
-    navigate("/dashboard");
+    navigate("/upload-customer");
   };
 
   return (
