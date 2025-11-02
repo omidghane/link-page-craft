@@ -35,17 +35,17 @@ const UploadCustomer = () => {
     e.preventDefault();
     
     if (!file) {
-      toast.error("Please select an Excel file");
+      toast.error("لطفاً یک فایل اکسل انتخاب کنید");
       return;
     }
 
     if (!formData.depotLatitude || !formData.depotLongitude || !formData.maxCapacity) {
-      toast.error("Please fill in all required fields");
+      toast.error("لطفاً تمام فیلدهای الزامی را پر کنید");
       return;
     }
 
     // Process the upload
-    toast.success("Customer data uploaded successfully!");
+    toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
     navigate("/dashboard");
   };
 
@@ -59,18 +59,18 @@ const UploadCustomer = () => {
             <p className="text-muted-foreground italic">Next Generation of Logistics</p>
           </div>
 
-          <h2 className="text-3xl font-bold text-center mb-8">Upload Customer Excel</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">بارگذاری فایل اکسل مشتریان</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Excel File Upload */}
             <div className="space-y-2">
               <Label htmlFor="excel-file" className="text-base font-semibold">
-                Excel File:
+                فایل اکسل:
               </Label>
               <div className="flex items-center gap-3">
                 <label htmlFor="excel-file" className="cursor-pointer">
                   <div className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors border border-input">
-                    Browse...
+                    انتخاب فایل...
                   </div>
                   <input
                     id="excel-file"
@@ -81,7 +81,7 @@ const UploadCustomer = () => {
                   />
                 </label>
                 <span className="text-muted-foreground flex-1 px-4 py-2 border border-input rounded-md bg-background">
-                  {file ? file.name : "No file selected."}
+                  {file ? file.name : "فایلی انتخاب نشده است"}
                 </span>
               </div>
             </div>
@@ -89,7 +89,7 @@ const UploadCustomer = () => {
             {/* Depot Latitude */}
             <div className="space-y-2">
               <Label htmlFor="depotLatitude" className="text-base font-semibold">
-                Depot Latitude:
+                عرض جغرافیایی انبار:
               </Label>
               <Input
                 id="depotLatitude"
@@ -106,7 +106,7 @@ const UploadCustomer = () => {
             {/* Depot Longitude */}
             <div className="space-y-2">
               <Label htmlFor="depotLongitude" className="text-base font-semibold">
-                Depot Longitude:
+                طول جغرافیایی انبار:
               </Label>
               <Input
                 id="depotLongitude"
@@ -123,7 +123,7 @@ const UploadCustomer = () => {
             {/* Start Time */}
             <div className="space-y-2">
               <Label htmlFor="startTime" className="text-base font-semibold">
-                Start Time (HH:MM):
+                زمان شروع:
               </Label>
               <Input
                 id="startTime"
@@ -139,7 +139,7 @@ const UploadCustomer = () => {
             {/* Finish Time */}
             <div className="space-y-2">
               <Label htmlFor="finishTime" className="text-base font-semibold">
-                Finish Time (HH:MM):
+                زمان پایان:
               </Label>
               <Input
                 id="finishTime"
@@ -155,7 +155,7 @@ const UploadCustomer = () => {
             {/* Maximum Capacity per Vehicle */}
             <div className="space-y-2">
               <Label htmlFor="maxCapacity" className="text-base font-semibold">
-                Maximum Capacity per Vehicle:
+                حداکثر ظرفیت هر خودرو:
               </Label>
               <Input
                 id="maxCapacity"
@@ -171,7 +171,7 @@ const UploadCustomer = () => {
             {/* Number of Vehicles */}
             <div className="space-y-2">
               <Label htmlFor="numVehicles" className="text-base font-semibold">
-                Number of Vehicles (optional):
+                تعداد خودروها (اختیاری):
               </Label>
               <Input
                 id="numVehicles"
@@ -179,7 +179,7 @@ const UploadCustomer = () => {
                 type="number"
                 value={formData.numVehicles}
                 onChange={handleInputChange}
-                placeholder="Leave empty for auto"
+                placeholder="برای حالت خودکار خالی بگذارید"
                 className="h-12"
               />
             </div>
@@ -191,7 +191,7 @@ const UploadCustomer = () => {
               size="lg"
             >
               <Upload className="ml-2 h-5 w-5" />
-              Upload
+              بارگذاری
             </Button>
           </form>
         </div>
