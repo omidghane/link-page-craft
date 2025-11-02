@@ -1,0 +1,203 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+const UploadCustomer = () => {
+  const navigate = useNavigate();
+  const [file, setFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState({
+    depotLatitude: "",
+    depotLongitude: "",
+    startTime: "08:00",
+    finishTime: "20:00",
+    maxCapacity: "",
+    numVehicles: "",
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!file) {
+      toast.error("Please select an Excel file");
+      return;
+    }
+
+    if (!formData.depotLatitude || !formData.depotLongitude || !formData.maxCapacity) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Process the upload
+    toast.success("Customer data uploaded successfully!");
+    navigate("/dashboard");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        <div className="bg-card rounded-lg shadow-2xl p-8 border border-border">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-primary mb-2">DELINEX</h1>
+            <p className="text-muted-foreground italic">Next Generation of Logistics</p>
+          </div>
+
+          <h2 className="text-3xl font-bold text-center mb-8">Upload Customer Excel</h2>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Excel File Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="excel-file" className="text-base font-semibold">
+                Excel File:
+              </Label>
+              <div className="flex items-center gap-3">
+                <label htmlFor="excel-file" className="cursor-pointer">
+                  <div className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors border border-input">
+                    Browse...
+                  </div>
+                  <input
+                    id="excel-file"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-muted-foreground flex-1 px-4 py-2 border border-input rounded-md bg-background">
+                  {file ? file.name : "No file selected."}
+                </span>
+              </div>
+            </div>
+
+            {/* Depot Latitude */}
+            <div className="space-y-2">
+              <Label htmlFor="depotLatitude" className="text-base font-semibold">
+                Depot Latitude:
+              </Label>
+              <Input
+                id="depotLatitude"
+                name="depotLatitude"
+                type="number"
+                step="any"
+                value={formData.depotLatitude}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Depot Longitude */}
+            <div className="space-y-2">
+              <Label htmlFor="depotLongitude" className="text-base font-semibold">
+                Depot Longitude:
+              </Label>
+              <Input
+                id="depotLongitude"
+                name="depotLongitude"
+                type="number"
+                step="any"
+                value={formData.depotLongitude}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Start Time */}
+            <div className="space-y-2">
+              <Label htmlFor="startTime" className="text-base font-semibold">
+                Start Time (HH:MM):
+              </Label>
+              <Input
+                id="startTime"
+                name="startTime"
+                type="time"
+                value={formData.startTime}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Finish Time */}
+            <div className="space-y-2">
+              <Label htmlFor="finishTime" className="text-base font-semibold">
+                Finish Time (HH:MM):
+              </Label>
+              <Input
+                id="finishTime"
+                name="finishTime"
+                type="time"
+                value={formData.finishTime}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Maximum Capacity per Vehicle */}
+            <div className="space-y-2">
+              <Label htmlFor="maxCapacity" className="text-base font-semibold">
+                Maximum Capacity per Vehicle:
+              </Label>
+              <Input
+                id="maxCapacity"
+                name="maxCapacity"
+                type="number"
+                value={formData.maxCapacity}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Number of Vehicles */}
+            <div className="space-y-2">
+              <Label htmlFor="numVehicles" className="text-base font-semibold">
+                Number of Vehicles (optional):
+              </Label>
+              <Input
+                id="numVehicles"
+                name="numVehicles"
+                type="number"
+                value={formData.numVehicles}
+                onChange={handleInputChange}
+                placeholder="Leave empty for auto"
+                className="h-12"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-14 text-lg font-semibold"
+              size="lg"
+            >
+              <Upload className="ml-2 h-5 w-5" />
+              Upload
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UploadCustomer;
