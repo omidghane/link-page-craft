@@ -9,6 +9,8 @@ services:
       - /app/node_modules  # Prevent re-installing node_modules on each container restart
     environment:
       NODE_ENV: development
+      VITE_SUPABASE_URL: http://localhost:8000          # or whatever KONG_HTTP_PORT is mapped to
+      VITE_SUPABASE_ANON_KEY: your_anon_key_from_env
     restart: unless-stopped
     # Uncomment to use for logging purposes (optional)
     # logging:

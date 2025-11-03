@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Download } from "lucide-react";
+import Map from "@/components/Map";
 import {
   Table,
   TableBody,
@@ -106,6 +107,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
+      <Map />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

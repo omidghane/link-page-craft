@@ -45,6 +45,14 @@ const UploadCustomer = () => {
       return;
     }
 
+    localStorage.setItem(
+      "depotLocation",
+      JSON.stringify({
+        latitude: parseFloat(formData.depotLatitude),
+        longitude: parseFloat(formData.depotLongitude),
+      })
+    );
+
     // Process the upload
     toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
     navigate("/dashboard");
