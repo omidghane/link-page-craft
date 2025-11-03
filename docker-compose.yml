@@ -1,0 +1,18 @@
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"   # Expose port 3000 for your dev server
+    volumes:
+      - .:/app         # Mount the current directory to the container for live changes
+      - /app/node_modules  # Prevent re-installing node_modules on each container restart
+    environment:
+      NODE_ENV: development
+    restart: unless-stopped
+    # Uncomment to use for logging purposes (optional)
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"

@@ -6,6 +6,8 @@
 All colors MUST be HSL.
 */
 
+#map { height: 180px; }
+
 @layer base {
   :root {
     --background: 0 0% 100%;
