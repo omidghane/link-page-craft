@@ -1,12 +1,108 @@
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
-import { RouteMap } from "@/components/RouteMap";
-import { VehicleAssignments } from "@/components/VehicleAssignments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Download } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Dashboard = () => {
+  const deliveries = [
+    {
+      id: "DEL-001",
+      driver: "علی حسینی",
+      status: "delivered",
+      statusText: "تحویل شده",
+      origin: "انبار مرکزی",
+      destination: "تهران، پونک",
+      time: "ساعت 15 دقیقه 2",
+      distance: "45 کیلومتر",
+    },
+    {
+      id: "DEL-002",
+      driver: "زهرا احمدی",
+      status: "in-transit",
+      statusText: "در حال انتقال",
+      origin: "انبار شمال",
+      destination: "کرج، مهرشهر",
+      time: "ساعت 50 دقیقه 1",
+      distance: "30 کیلومتر",
+    },
+    {
+      id: "DEL-003",
+      driver: "رضا کریمی",
+      status: "pending",
+      statusText: "منتظر",
+      origin: "انبار جنوب",
+      destination: "اصفهان، سرو سه راه پل",
+      time: "ساعت 00 دقیقه 3",
+      distance: "70 کیلومتر",
+    },
+    {
+      id: "DEL-004",
+      driver: "فاطمه رضایی",
+      status: "delivered",
+      statusText: "تحویل شده",
+      origin: "انبار مرکزی",
+      destination: "شهر، شهر زنبیل",
+      time: "ساعت 40 دقیقه 2",
+      distance: "55 کیلومتر",
+    },
+    {
+      id: "DEL-005",
+      driver: "محمد نوری",
+      status: "in-transit",
+      statusText: "در حال انتقال",
+      origin: "انبار شرق",
+      destination: "مشهد، خرابه",
+      time: "ساعت 20 دقیقه 4",
+      distance: "90 کیلومتر",
+    },
+    {
+      id: "DEL-006",
+      driver: "نادا احمدی",
+      status: "pending",
+      statusText: "منتظر",
+      origin: "انبار غرب",
+      destination: "کرمان، ونسستر",
+      time: "ساعت 30 دقیقه 2",
+      distance: "60 کیلومتر",
+    },
+  ];
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "delivered":
+        return "default";
+      case "in-transit":
+        return "secondary";
+      case "pending":
+        return "outline";
+      default:
+        return "default";
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "delivered":
+        return "bg-success/10 text-success hover:bg-success/20 border-success/20";
+      case "in-transit":
+        return "bg-accent/10 text-accent hover:bg-accent/20 border-accent/20";
+      case "pending":
+        return "bg-warning/10 text-warning hover:bg-warning/20 border-warning/20";
+      default:
+        return "";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
@@ -43,13 +139,70 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Route Map */}
-        <div className="mb-8">
-          <RouteMap />
+        {/* Search and Filter */}
+        <div className="bg-card rounded-lg border border-border p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 justify-between">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="جستجو بر اساس شناسه مسیر، راننده..."
+                className="pr-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon">
+                <Filter className="h-4 w-4" />
+              </Button>
+              <Button className="bg-primary hover:bg-primary-hover gap-2">
+                <Download className="h-4 w-4" />
+                دانلود گزارش
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Vehicle Assignments */}
-        <VehicleAssignments />
+        {/* Deliveries Table */}
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">شناسه</TableHead>
+                <TableHead className="text-right">فاصله</TableHead>
+                <TableHead className="text-right">مدت زمان تخمینی</TableHead>
+                <TableHead className="text-right">محل پایان</TableHead>
+                <TableHead className="text-right">محل شروع</TableHead>
+                <TableHead className="text-right">وضعیت</TableHead>
+                <TableHead className="text-right">راننده</TableHead>
+                <TableHead className="text-right">شناسه مسیر</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {deliveries.map((delivery) => (
+                <TableRow key={delivery.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <Button variant="link" className="text-primary p-0 h-auto">
+                      ← مشاهده جزئیات
+                    </Button>
+                  </TableCell>
+                  <TableCell>{delivery.distance}</TableCell>
+                  <TableCell>{delivery.time}</TableCell>
+                  <TableCell className="font-medium">{delivery.destination}</TableCell>
+                  <TableCell>{delivery.origin}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={getStatusVariant(delivery.status)}
+                      className={getStatusColor(delivery.status)}
+                    >
+                      {delivery.statusText}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">{delivery.driver}</TableCell>
+                  <TableCell className="font-mono">{delivery.id}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </main>
     </div>
   );
