@@ -1,5 +1,6 @@
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
+import { RouteMap } from "@/components/RouteMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +114,11 @@ const Dashboard = () => {
           <p className="text-muted-foreground">
             مسیرهای تحویل شما بهینه شده است تا کارآیی را به حداکثر برساند
           </p>
+        </div>
+
+        {/* Route Map */}
+        <div className="mb-8">
+          <RouteMap />
         </div>
 
         {/* Stats Grid */}
