@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -136,10 +136,9 @@ export const RouteMap = () => {
         <MapController />
         
         {vehicleRoutes.map((route) => (
-          <>
+          <React.Fragment key={route.id}>
             {/* Draw route line */}
             <Polyline
-              key={`line-${route.id}`}
               positions={route.points.map(p => [p.lat, p.lng] as [number, number])}
               color={route.color}
               weight={4}
@@ -166,7 +165,7 @@ export const RouteMap = () => {
                 </Popup>
               </Marker>
             ))}
-          </>
+          </React.Fragment>
         ))}
 
         {/* Legend */}
