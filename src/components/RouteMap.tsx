@@ -136,9 +136,10 @@ export const RouteMap = () => {
         <MapController />
         
         {vehicleRoutes.map((route) => (
-          <div key={route.id}>
+          <>
             {/* Draw route line */}
             <Polyline
+              key={`line-${route.id}`}
               positions={route.points.map(p => [p.lat, p.lng] as [number, number])}
               color={route.color}
               weight={4}
@@ -165,7 +166,7 @@ export const RouteMap = () => {
                 </Popup>
               </Marker>
             ))}
-          </div>
+          </>
         ))}
 
         {/* Legend */}
