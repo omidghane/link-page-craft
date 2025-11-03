@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,23 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import delinexLogo from "@/assets/delinex-logo.png";
-import '@/hooks/leaflet-icons.ts'; 
-
-// Import Leaflet components
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
-
-// Center the map and allow clicks to update coordinates
-const LocationMarker = ({ setLatLng }: { setLatLng: (latLng: { lat: number, lng: number }) => void }) => {
-  useMapEvents({
-    click(event) {
-      const { lat, lng } = event.latlng;
-      setLatLng({ lat, lng });
-    },
-  });
-
-  return null;
-};
 
 const UploadCustomer = () => {
   const navigate = useNavigate();
@@ -35,8 +18,6 @@ const UploadCustomer = () => {
     maxCapacity: "",
     numVehicles: "",
   });
-  
-  const [latLng, setLatLng] = useState<{ lat: number, lng: number } | null>(null); // For Leaflet map
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -51,54 +32,171 @@ const UploadCustomer = () => {
     });
   };
 
-  return (
-    <div>
-      {/* Leaflet Map */}
-      <div style={{ height: '400px', marginBottom: '20px' }}>
-        <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: '100%', width: '100%' }}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <LocationMarker setLatLng={setLatLng} />
-          {latLng && (
-            <Marker position={[latLng.lat, latLng.lng]}>
-              <Popup>
-                Latitude: {latLng.lat} <br /> Longitude: {latLng.lng}
-              </Popup>
-            </Marker>
-          )}
-        </MapContainer>
-      </div>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!file) {
+      toast.error("لطفاً یک فایل اکسل انتخاب کنید");
+      return;
+    }
 
-      {/* Form Fields */}
-      <form>
-        <Label htmlFor="file">Upload File</Label>
-        <Input type="file" id="file" onChange={handleFileChange} />
-        
-        <Label htmlFor="depotLatitude">Latitude</Label>
-        <Input
-          type="text"
-          id="depotLatitude"
-          name="depotLatitude"
-          value={formData.depotLatitude}
-          onChange={handleInputChange}
-        />
-        
-        <Label htmlFor="depotLongitude">Longitude</Label>
-        <Input
-          type="text"
-          id="depotLongitude"
-          name="depotLongitude"
-          value={formData.depotLongitude}
-          onChange={handleInputChange}
-        />
-        
-        {/* Add other form fields as necessary */}
-        
-        <Button onClick={() => toast.success("File uploaded successfully!")}>
-          <Upload /> Upload
-        </Button>
-      </form>
+    if (!formData.depotLatitude || !formData.depotLongitude || !formData.maxCapacity) {
+      toast.error("لطفاً تمام فیلدهای الزامی را پر کنید");
+      return;
+    }
+
+    // Process the upload
+    toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
+    navigate("/dashboard");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        <div className="bg-card rounded-lg shadow-2xl p-8 border border-border">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <img src={delinexLogo} alt="Delinex Logo" className="h-24 mx-auto mb-2" />
+            <p className="text-muted-foreground italic">Next Generation of Logistics</p>
+          </div>
+
+          <h2 className="text-3xl font-bold text-center mb-8">بارگذاری فایل اکسل مشتریان</h2>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Excel File Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="excel-file" className="text-base font-semibold">
+                فایل اکسل:
+              </Label>
+              <div className="flex items-center gap-3">
+                <label htmlFor="excel-file" className="cursor-pointer">
+                  <div className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors border border-input">
+                    انتخاب فایل...
+                  </div>
+                  <input
+                    id="excel-file"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-muted-foreground flex-1 px-4 py-2 border border-input rounded-md bg-background">
+                  {file ? file.name : "فایلی انتخاب نشده است"}
+                </span>
+              </div>
+            </div>
+
+            {/* Depot Latitude */}
+            <div className="space-y-2">
+              <Label htmlFor="depotLatitude" className="text-base font-semibold">
+                عرض جغرافیایی انبار:
+              </Label>
+              <Input
+                id="depotLatitude"
+                name="depotLatitude"
+                type="number"
+                step="any"
+                value={formData.depotLatitude}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Depot Longitude */}
+            <div className="space-y-2">
+              <Label htmlFor="depotLongitude" className="text-base font-semibold">
+                طول جغرافیایی انبار:
+              </Label>
+              <Input
+                id="depotLongitude"
+                name="depotLongitude"
+                type="number"
+                step="any"
+                value={formData.depotLongitude}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Start Time */}
+            <div className="space-y-2">
+              <Label htmlFor="startTime" className="text-base font-semibold">
+                زمان شروع:
+              </Label>
+              <Input
+                id="startTime"
+                name="startTime"
+                type="time"
+                value={formData.startTime}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Finish Time */}
+            <div className="space-y-2">
+              <Label htmlFor="finishTime" className="text-base font-semibold">
+                زمان پایان:
+              </Label>
+              <Input
+                id="finishTime"
+                name="finishTime"
+                type="time"
+                value={formData.finishTime}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Maximum Capacity per Vehicle */}
+            <div className="space-y-2">
+              <Label htmlFor="maxCapacity" className="text-base font-semibold">
+                حداکثر ظرفیت هر خودرو:
+              </Label>
+              <Input
+                id="maxCapacity"
+                name="maxCapacity"
+                type="number"
+                value={formData.maxCapacity}
+                onChange={handleInputChange}
+                required
+                className="h-12"
+              />
+            </div>
+
+            {/* Number of Vehicles */}
+            <div className="space-y-2">
+              <Label htmlFor="numVehicles" className="text-base font-semibold">
+                تعداد خودروها (اختیاری):
+              </Label>
+              <Input
+                id="numVehicles"
+                name="numVehicles"
+                type="number"
+                value={formData.numVehicles}
+                onChange={handleInputChange}
+                placeholder="برای حالت خودکار خالی بگذارید"
+                className="h-12"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-14 text-lg font-semibold"
+              size="lg"
+            >
+              <Upload className="ml-2 h-5 w-5" />
+              بارگذاری
+            </Button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
