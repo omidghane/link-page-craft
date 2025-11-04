@@ -5,7 +5,7 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Clock, Gauge, DollarSign, Zap, CheckCircle } from "lucide-react";
 import worldMap from "@/assets/world-map.png";
-import parkingGarage from "@/assets/parking-garage.png";
+import parkingGarage from "@/assets/download.png";
 import { Link } from "react-router-dom";
 const Index = () => {
   return <div className="min-h-screen flex flex-col">
@@ -15,8 +15,8 @@ const Index = () => {
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6 animate-fade-in">
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+            <div className="flex flex-col items-center space-y-6 animate-fade-in">
+              <h1 className="text-3xl md:text-3xl font-bold leading-tight">
                 <span className="text-primary">Delinex:</span> لوجستیک هوشمند با مسیرهای بهینه با قدرت هوش مصنوعی
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">

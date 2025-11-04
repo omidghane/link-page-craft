@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Iranian Sans"', 'ui-sans-serif', 'system-ui', 'Arial'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
