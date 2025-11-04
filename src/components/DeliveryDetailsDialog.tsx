@@ -51,6 +51,7 @@ export const DeliveryDetailsDialog = ({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="text-right">ترتیب</TableHead>
                 <TableHead className="text-right">id</TableHead>
                 <TableHead className="text-right">Longitude</TableHead>
                 <TableHead className="text-right">Latitude</TableHead>
@@ -61,8 +62,9 @@ export const DeliveryDetailsDialog = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {stops.map((stop) => (
+              {stops.map((stop, index) => (
                 <TableRow key={stop.id} className="hover:bg-muted/50">
+                  <TableCell className="font-bold">{index + 1}</TableCell>
                   <TableCell className="font-mono">{stop.id}</TableCell>
                   <TableCell>{stop.longitude}</TableCell>
                   <TableCell>{stop.latitude}</TableCell>
