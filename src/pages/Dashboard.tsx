@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Download } from "lucide-react";
 import Map from "@/components/Map";
+import { DeliveryDetailsDialog } from "@/components/DeliveryDetailsDialog";
 import {
   Table,
   TableBody,
@@ -15,6 +17,9 @@ import {
 } from "@/components/ui/table";
 
 const Dashboard = () => {
+  const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const deliveries = [
     {
       id: "DEL-001",
@@ -104,6 +109,60 @@ const Dashboard = () => {
     }
   };
 
+  const getDeliveryStops = (deliveryId: string) => {
+    // Sample data - in a real app, this would come from your backend
+    const stopsData: Record<string, any[]> = {
+      "DEL-001": [
+        {
+          id: "584353",
+          customerName: "دکتر فینی",
+          address: "محله فرودوس - فلكه دوم صادقیه - بلوار فردوس شرق - ابتدای خیابان 20 متری ولیعصر پلاك 53-طبقه اول- واحد مسكونی شماره1",
+          latitude: 35.7228775,
+          longitude: 51.33027267,
+          startTime: "09:00",
+          endTime: "09:15",
+        },
+        {
+          id: "584354",
+          customerName: "آقای محمدی",
+          address: "تهران - خیابان ولیعصر - پلاک 120",
+          latitude: 35.7125,
+          longitude: 51.4215,
+          startTime: "09:30",
+          endTime: "09:45",
+        },
+      ],
+      "DEL-002": [
+        {
+          id: "584355",
+          customerName: "خانم رضایی",
+          address: "کرج - مهرشهر - بلوار اصلی - پلاک 45",
+          latitude: 35.8328,
+          longitude: 51.0094,
+          startTime: "10:00",
+          endTime: "10:20",
+        },
+      ],
+      "DEL-003": [
+        {
+          id: "584356",
+          customerName: "شرکت تجارت",
+          address: "اصفهان - سه راه پل سرو - مجتمع تجاری - طبقه دوم",
+          latitude: 32.6546,
+          longitude: 51.6680,
+          startTime: "11:00",
+          endTime: "11:30",
+        },
+      ],
+    };
+    return stopsData[deliveryId] || [];
+  };
+
+  const handleViewDetails = (deliveryId: string) => {
+    setSelectedDelivery(deliveryId);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
@@ -182,7 +241,11 @@ const Dashboard = () => {
               {deliveries.map((delivery) => (
                 <TableRow key={delivery.id} className="hover:bg-muted/50">
                   <TableCell>
-                    <Button variant="link" className="text-primary p-0 h-auto">
+                    <Button 
+                      variant="link" 
+                      className="text-primary p-0 h-auto"
+                      onClick={() => handleViewDetails(delivery.id)}
+                    >
                       ← مشاهده جزئیات
                     </Button>
                   </TableCell>
@@ -206,6 +269,14 @@ const Dashboard = () => {
           </Table>
         </div>
       </main>
+
+      <DeliveryDetailsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        deliveryId={selectedDelivery || ""}
+        driver={deliveries.find(d => d.id === selectedDelivery)?.driver || ""}
+        stops={getDeliveryStops(selectedDelivery || "")}
+      />
     </div>
   );
 };
