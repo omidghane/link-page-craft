@@ -6,22 +6,85 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseClient"; // ✅ new import
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    toast.success("ورود موفق!");
-    navigate("/upload-customer");
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message || "خطا در ورود");
+        return;
+      }
+
+      if (data.session) {
+        toast.success("ورود موفق!");
+        navigate("/upload-customer");
+      } else {
+        toast.error("ورود ناموفق. لطفاً دوباره تلاش کنید.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("خطای غیرمنتظره. لطفاً دوباره تلاش کنید.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    toast.success("ثبت‌نام موفق!");
-    navigate("/upload-customer");
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          data: {
+            full_name: signupName,
+          },
+          // emailRedirectTo: "http://localhost:3000" // if you want email confirmation redirect
+        },
+      });
+
+      if (error) {
+        toast.error(error.message || "خطا در ثبت‌نام");
+        return;
+      }
+
+      // depending on your GOTRUE_MAILER_AUTOCONFIRM, user may need to confirm email
+      if (data.user && !data.session) {
+        toast.success("ثبت‌نام موفق! لطفاً ایمیل خود را تأیید کنید.");
+      } else {
+        toast.success("ثبت‌نام موفق!");
+        navigate("/upload-customer");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("خطای غیرمنتظره در ثبت‌نام.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,10 +104,13 @@ const Login = () => {
               <TabsTrigger value="signup">ثبت نام</TabsTrigger>
             </TabsList>
 
+            {/* LOGIN TAB */}
             <TabsContent value="login">
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold mb-2">ورود به سیستم</h2>
-                <p className="text-sm text-muted-foreground">لطفاً اطلاعات خود را به Delinex امید</p>
+                <p className="text-sm text-muted-foreground">
+                  لطفاً اطلاعات خود را وارد کنید
+                </p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4">
@@ -74,8 +140,12 @@ const Login = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-primary hover:bg-primary-hover">
-                  ورود
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary-hover"
+                  disabled={loading}
+                >
+                  {loading ? "در حال ورود..." : "ورود"}
                 </Button>
 
                 <div className="text-center">
@@ -86,10 +156,13 @@ const Login = () => {
               </form>
             </TabsContent>
 
+            {/* SIGNUP TAB */}
             <TabsContent value="signup">
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold mb-2">ثبت نام</h2>
-                <p className="text-sm text-muted-foreground">حساب کاربری جدید ایجاد کنید</p>
+                <p className="text-sm text-muted-foreground">
+                  حساب کاربری جدید ایجاد کنید
+                </p>
               </div>
 
               <form onSubmit={handleSignup} className="space-y-4">
@@ -99,6 +172,8 @@ const Login = () => {
                     id="signup-name"
                     type="text"
                     placeholder="نام کامل خود را وارد کنید"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
                     required
                     className="text-right"
                   />
@@ -110,6 +185,8 @@ const Login = () => {
                     id="signup-email"
                     type="email"
                     placeholder="ایمیل خود را وارد کنید"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
                     required
                     className="text-right"
                   />
@@ -121,13 +198,19 @@ const Login = () => {
                     id="signup-password"
                     type="password"
                     placeholder="رمز عبور را انتخاب کنید"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
                     required
                     className="text-right"
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-primary hover:bg-primary-hover">
-                  ثبت نام
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary-hover"
+                  disabled={loading}
+                >
+                  {loading ? "در حال ثبت نام..." : "ثبت نام"}
                 </Button>
               </form>
             </TabsContent>
