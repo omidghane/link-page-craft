@@ -82,17 +82,17 @@ export const DriverRouteCard = ({
                 </div>
 
                 <div className="flex-1 flex gap-6 items-center overflow-x-auto">
-                  <div className="flex flex-col min-w-[2rem]">
+                  <div className="flex flex-col min-w-[1rem]">
                     <p className="text-[9px] text-muted-foreground">شناسه</p>
                     <p className="font-mono font-medium text-[10px]">{stop.customerId}</p>
                   </div>
 
-                  <div className="flex flex-col min-w-[2rem]">
+                  <div className="flex flex-col min-w-[1rem]">
                     <p className="text-[9px] text-muted-foreground">حرکت</p>
                     <p className="font-medium text-[10px]">{stop.departureTime}</p>
                   </div>
 
-                  <div className="flex flex-col min-w-[2rem]">
+                  <div className="flex flex-col min-w-[1rem]">
                     <p className="text-[9px] text-muted-foreground">رسیدن</p>
                     <p className="font-medium text-[10px]">{stop.arrivalTime}</p>
                   </div>
