@@ -41,28 +41,28 @@ export const DriverRouteCard = ({
 }: DriverRouteCardProps) => {
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-muted/50 border-b border-border pb-4">
-        <div className="space-y-3">
+      <CardHeader className="bg-muted/50 border-b border-border p-3 pb-2">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold">{driverName}</h3>
-            <Badge className={getStatusColor(status)}>
+            <h3 className="text-sm font-bold">{driverName}</h3>
+            <Badge className={`text-xs ${getStatusColor(status)}`}>
               {statusText}
             </Badge>
           </div>
           
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-4 w-4" />
+          <div className="grid grid-cols-1 gap-1.5 text-xs">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-3 w-3" />
               <div>
-                <p className="text-xs">زمان حرکت</p>
-                <p className="font-medium text-foreground">{departureTime}</p>
+                <p className="text-[10px]">زمان حرکت</p>
+                <p className="font-medium text-foreground text-xs">{departureTime}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="h-3 w-3" />
               <div>
-                <p className="text-xs">تحویل آخرین مشتری</p>
-                <p className="font-medium text-foreground">{lastDeliveryTime}</p>
+                <p className="text-[10px]">تحویل آخرین مشتری</p>
+                <p className="font-medium text-foreground text-xs">{lastDeliveryTime}</p>
               </div>
             </div>
           </div>
@@ -74,28 +74,28 @@ export const DriverRouteCard = ({
           {stops.map((stop) => (
             <div
               key={stop.customerId}
-              className="p-4 hover:bg-muted/30 transition-colors"
+              className="p-2 hover:bg-muted/30 transition-colors"
             >
-              <div className="grid grid-cols-4 gap-4 items-center text-sm">
-                <div className="flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+              <div className="space-y-1 text-xs">
+                <div className="flex items-center justify-center mb-1">
+                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
                     {stop.order}
                   </div>
                 </div>
                 
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">شناسه مشتری</p>
-                  <p className="font-mono font-medium">{stop.customerId}</p>
+                  <p className="text-[9px] text-muted-foreground">شناسه</p>
+                  <p className="font-mono font-medium text-[10px]">{stop.customerId}</p>
                 </div>
                 
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">زمان حرکت</p>
-                  <p className="font-medium">{stop.departureTime}</p>
+                  <p className="text-[9px] text-muted-foreground">حرکت</p>
+                  <p className="font-medium text-[10px]">{stop.departureTime}</p>
                 </div>
                 
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">زمان رسیدن</p>
-                  <p className="font-medium">{stop.arrivalTime}</p>
+                  <p className="text-[9px] text-muted-foreground">رسیدن</p>
+                  <p className="font-medium text-[10px]">{stop.arrivalTime}</p>
                 </div>
               </div>
             </div>

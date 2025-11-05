@@ -157,7 +157,7 @@ const Dashboard = () => {
         </div>
 
         {/* Driver Route Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {driverRoutes.map((route, index) => (
             <DriverRouteCard
               key={index}
