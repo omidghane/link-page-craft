@@ -3,165 +3,99 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Download } from "lucide-react";
 import Map from "@/components/Map";
-import { DeliveryDetailsDialog } from "@/components/DeliveryDetailsDialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DriverRouteCard } from "@/components/DriverRouteCard";
 
 const Dashboard = () => {
-  const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const deliveries = [
+  const driverRoutes = [
     {
-      id: "DEL-001",
-      driver: "علی حسینی",
+      driverName: "علی حسینی",
+      departureTime: "08:00",
+      lastDeliveryTime: "12:30",
       status: "delivered",
       statusText: "تحویل شده",
-      origin: "انبار مرکزی",
-      destination: "تهران، پونک",
-      time: "ساعت 15 دقیقه 2",
-      distance: "45 کیلومتر",
+      stops: [
+        { order: 1, customerId: "584353", departureTime: "08:00", arrivalTime: "08:45" },
+        { order: 2, customerId: "584354", departureTime: "09:00", arrivalTime: "09:30" },
+        { order: 3, customerId: "584355", departureTime: "09:45", arrivalTime: "10:15" },
+        { order: 4, customerId: "584356", departureTime: "10:30", arrivalTime: "11:00" },
+        { order: 5, customerId: "584357", departureTime: "11:15", arrivalTime: "12:30" },
+      ],
     },
     {
-      id: "DEL-002",
-      driver: "زهرا احمدی",
+      driverName: "زهرا احمدی",
+      departureTime: "09:00",
+      lastDeliveryTime: "14:00",
       status: "in-transit",
       statusText: "در حال انتقال",
-      origin: "انبار شمال",
-      destination: "کرج، مهرشهر",
-      time: "ساعت 50 دقیقه 1",
-      distance: "30 کیلومتر",
+      stops: [
+        { order: 1, customerId: "584358", departureTime: "09:00", arrivalTime: "09:45" },
+        { order: 2, customerId: "584359", departureTime: "10:00", arrivalTime: "10:40" },
+        { order: 3, customerId: "584360", departureTime: "11:00", arrivalTime: "11:45" },
+        { order: 4, customerId: "584361", departureTime: "12:00", arrivalTime: "13:15" },
+        { order: 5, customerId: "584362", departureTime: "13:30", arrivalTime: "14:00" },
+      ],
     },
     {
-      id: "DEL-003",
-      driver: "رضا کریمی",
+      driverName: "رضا کریمی",
+      departureTime: "10:00",
+      lastDeliveryTime: "15:30",
       status: "pending",
       statusText: "منتظر",
-      origin: "انبار جنوب",
-      destination: "اصفهان، سرو سه راه پل",
-      time: "ساعت 00 دقیقه 3",
-      distance: "70 کیلومتر",
+      stops: [
+        { order: 1, customerId: "584363", departureTime: "10:00", arrivalTime: "10:50" },
+        { order: 2, customerId: "584364", departureTime: "11:00", arrivalTime: "11:45" },
+        { order: 3, customerId: "584365", departureTime: "12:00", arrivalTime: "13:00" },
+        { order: 4, customerId: "584366", departureTime: "13:15", arrivalTime: "14:15" },
+        { order: 5, customerId: "584367", departureTime: "14:30", arrivalTime: "15:30" },
+      ],
     },
     {
-      id: "DEL-004",
-      driver: "فاطمه رضایی",
+      driverName: "فاطمه رضایی",
+      departureTime: "07:30",
+      lastDeliveryTime: "13:00",
       status: "delivered",
       statusText: "تحویل شده",
-      origin: "انبار مرکزی",
-      destination: "شهر، شهر زنبیل",
-      time: "ساعت 40 دقیقه 2",
-      distance: "55 کیلومتر",
+      stops: [
+        { order: 1, customerId: "584368", departureTime: "07:30", arrivalTime: "08:15" },
+        { order: 2, customerId: "584369", departureTime: "08:30", arrivalTime: "09:15" },
+        { order: 3, customerId: "584370", departureTime: "09:30", arrivalTime: "10:30" },
+        { order: 4, customerId: "584371", departureTime: "10:45", arrivalTime: "11:45" },
+        { order: 5, customerId: "584372", departureTime: "12:00", arrivalTime: "13:00" },
+      ],
     },
     {
-      id: "DEL-005",
-      driver: "محمد نوری",
+      driverName: "محمد نوری",
+      departureTime: "08:30",
+      lastDeliveryTime: "16:00",
       status: "in-transit",
       statusText: "در حال انتقال",
-      origin: "انبار شرق",
-      destination: "مشهد، خرابه",
-      time: "ساعت 20 دقیقه 4",
-      distance: "90 کیلومتر",
+      stops: [
+        { order: 1, customerId: "584373", departureTime: "08:30", arrivalTime: "09:30" },
+        { order: 2, customerId: "584374", departureTime: "09:45", arrivalTime: "10:45" },
+        { order: 3, customerId: "584375", departureTime: "11:00", arrivalTime: "12:15" },
+        { order: 4, customerId: "584376", departureTime: "12:30", arrivalTime: "13:45" },
+        { order: 5, customerId: "584377", departureTime: "14:00", arrivalTime: "15:00" },
+        { order: 6, customerId: "584378", departureTime: "15:15", arrivalTime: "16:00" },
+      ],
     },
     {
-      id: "DEL-006",
-      driver: "نادا احمدی",
+      driverName: "نادا احمدی",
+      departureTime: "09:30",
+      lastDeliveryTime: "14:30",
       status: "pending",
       statusText: "منتظر",
-      origin: "انبار غرب",
-      destination: "کرمان، ونسستر",
-      time: "ساعت 30 دقیقه 2",
-      distance: "60 کیلومتر",
+      stops: [
+        { order: 1, customerId: "584379", departureTime: "09:30", arrivalTime: "10:15" },
+        { order: 2, customerId: "584380", departureTime: "10:30", arrivalTime: "11:15" },
+        { order: 3, customerId: "584381", departureTime: "11:30", arrivalTime: "12:30" },
+        { order: 4, customerId: "584382", departureTime: "12:45", arrivalTime: "13:45" },
+        { order: 5, customerId: "584383", departureTime: "14:00", arrivalTime: "14:30" },
+      ],
     },
   ];
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "default";
-      case "in-transit":
-        return "secondary";
-      case "pending":
-        return "outline";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "bg-success/10 text-success hover:bg-success/20 border-success/20";
-      case "in-transit":
-        return "bg-accent/10 text-accent hover:bg-accent/20 border-accent/20";
-      case "pending":
-        return "bg-warning/10 text-warning hover:bg-warning/20 border-warning/20";
-      default:
-        return "";
-    }
-  };
-
-  const getDeliveryStops = (deliveryId: string) => {
-    // Sample data - in a real app, this would come from your backend
-    const stopsData: Record<string, any[]> = {
-      "DEL-001": [
-        {
-          id: "584353",
-          customerName: "دکتر فینی",
-          address: "محله فرودوس - فلكه دوم صادقیه - بلوار فردوس شرق - ابتدای خیابان 20 متری ولیعصر پلاك 53-طبقه اول- واحد مسكونی شماره1",
-          latitude: 35.7228775,
-          longitude: 51.33027267,
-          startTime: "09:00",
-          endTime: "09:15",
-        },
-        {
-          id: "584354",
-          customerName: "آقای محمدی",
-          address: "تهران - خیابان ولیعصر - پلاک 120",
-          latitude: 35.7125,
-          longitude: 51.4215,
-          startTime: "09:30",
-          endTime: "09:45",
-        },
-      ],
-      "DEL-002": [
-        {
-          id: "584355",
-          customerName: "خانم رضایی",
-          address: "کرج - مهرشهر - بلوار اصلی - پلاک 45",
-          latitude: 35.8328,
-          longitude: 51.0094,
-          startTime: "10:00",
-          endTime: "10:20",
-        },
-      ],
-      "DEL-003": [
-        {
-          id: "584356",
-          customerName: "شرکت تجارت",
-          address: "اصفهان - سه راه پل سرو - مجتمع تجاری - طبقه دوم",
-          latitude: 32.6546,
-          longitude: 51.6680,
-          startTime: "11:00",
-          endTime: "11:30",
-        },
-      ],
-    };
-    return stopsData[deliveryId] || [];
-  };
-
-  const handleViewDetails = (deliveryId: string) => {
-    setSelectedDelivery(deliveryId);
-    setDialogOpen(true);
-  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -206,7 +140,7 @@ const Dashboard = () => {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="جستجو بر اساس شناسه مسیر، راننده..."
+                placeholder="جستجو بر اساس نام راننده..."
                 className="pr-10"
               />
             </div>
@@ -222,61 +156,21 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Deliveries Table */}
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">شناسه</TableHead>
-                <TableHead className="text-right">فاصله</TableHead>
-                <TableHead className="text-right">مدت زمان تخمینی</TableHead>
-                <TableHead className="text-right">محل پایان</TableHead>
-                <TableHead className="text-right">محل شروع</TableHead>
-                <TableHead className="text-right">وضعیت</TableHead>
-                <TableHead className="text-right">راننده</TableHead>
-                <TableHead className="text-right">شناسه مسیر</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {deliveries.map((delivery) => (
-                <TableRow key={delivery.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <Button 
-                      variant="link" 
-                      className="text-primary p-0 h-auto"
-                      onClick={() => handleViewDetails(delivery.id)}
-                    >
-                      ← مشاهده جزئیات
-                    </Button>
-                  </TableCell>
-                  <TableCell>{delivery.distance}</TableCell>
-                  <TableCell>{delivery.time}</TableCell>
-                  <TableCell className="font-medium">{delivery.destination}</TableCell>
-                  <TableCell>{delivery.origin}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getStatusVariant(delivery.status)}
-                      className={getStatusColor(delivery.status)}
-                    >
-                      {delivery.statusText}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{delivery.driver}</TableCell>
-                  <TableCell className="font-mono">{delivery.id}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        {/* Driver Route Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {driverRoutes.map((route, index) => (
+            <DriverRouteCard
+              key={index}
+              driverName={route.driverName}
+              departureTime={route.departureTime}
+              lastDeliveryTime={route.lastDeliveryTime}
+              status={route.status}
+              statusText={route.statusText}
+              stops={route.stops}
+            />
+          ))}
         </div>
       </main>
-
-      <DeliveryDetailsDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        deliveryId={selectedDelivery || ""}
-        driver={deliveries.find(d => d.id === selectedDelivery)?.driver || ""}
-        stops={getDeliveryStops(selectedDelivery || "")}
-      />
     </div>
   );
 };
