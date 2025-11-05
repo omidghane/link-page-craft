@@ -76,26 +76,26 @@ export const DriverRouteCard = ({
               key={stop.customerId}
               className="p-2 hover:bg-muted/30 transition-colors"
             >
-              <div className="space-y-1 text-xs">
-                <div className="flex items-center justify-center mb-1">
-                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
-                    {stop.order}
+              <div className="flex items-start gap-3 text-xs">
+                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] mt-1">
+                  {stop.order}
+                </div>
+
+                <div className="flex-1 flex gap-6 items-center overflow-x-auto">
+                  <div className="flex flex-col min-w-[2rem]">
+                    <p className="text-[9px] text-muted-foreground">شناسه</p>
+                    <p className="font-mono font-medium text-[10px]">{stop.customerId}</p>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <p className="text-[9px] text-muted-foreground">شناسه:</p>
-                  <p className="font-mono font-medium text-[10px]">{stop.customerId}</p>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <p className="text-[9px] text-muted-foreground">حرکت:</p>
-                  <p className="font-medium text-[10px]">{stop.departureTime}</p>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <p className="text-[9px] text-muted-foreground">رسیدن:</p>
-                  <p className="font-medium text-[10px]">{stop.arrivalTime}</p>
+
+                  <div className="flex flex-col min-w-[2rem]">
+                    <p className="text-[9px] text-muted-foreground">حرکت</p>
+                    <p className="font-medium text-[10px]">{stop.departureTime}</p>
+                  </div>
+
+                  <div className="flex flex-col min-w-[2rem]">
+                    <p className="text-[9px] text-muted-foreground">رسیدن</p>
+                    <p className="font-medium text-[10px]">{stop.arrivalTime}</p>
+                  </div>
                 </div>
               </div>
             </div>

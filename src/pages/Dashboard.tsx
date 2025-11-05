@@ -24,6 +24,20 @@ const Dashboard = () => {
       ],
     },
     {
+      driverName: "علی حسینی",
+      departureTime: "08:00",
+      lastDeliveryTime: "12:30",
+      status: "delivered",
+      statusText: "تحویل شده",
+      stops: [
+        { order: 1, customerId: "584353", departureTime: "08:00", arrivalTime: "08:45" },
+        { order: 2, customerId: "584354", departureTime: "09:00", arrivalTime: "09:30" },
+        { order: 3, customerId: "584355", departureTime: "09:45", arrivalTime: "10:15" },
+        { order: 4, customerId: "584356", departureTime: "10:30", arrivalTime: "11:00" },
+        { order: 5, customerId: "584357", departureTime: "11:15", arrivalTime: "12:30" },
+      ],
+    },
+    {
       driverName: "زهرا احمدی",
       departureTime: "09:00",
       lastDeliveryTime: "14:00",
