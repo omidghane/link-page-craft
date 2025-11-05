@@ -171,17 +171,18 @@ const Dashboard = () => {
         </div>
 
         {/* Driver Route Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {driverRoutes.map((route, index) => (
-            <DriverRouteCard
-              key={index}
-              driverName={route.driverName}
-              departureTime={route.departureTime}
-              lastDeliveryTime={route.lastDeliveryTime}
-              status={route.status}
-              statusText={route.statusText}
-              stops={route.stops}
-            />
+            <div key={index} className="flex-shrink-0 w-48">
+              <DriverRouteCard
+                driverName={route.driverName}
+                departureTime={route.departureTime}
+                lastDeliveryTime={route.lastDeliveryTime}
+                status={route.status}
+                statusText={route.statusText}
+                stops={route.stops}
+              />
+            </div>
           ))}
         </div>
       </main>
