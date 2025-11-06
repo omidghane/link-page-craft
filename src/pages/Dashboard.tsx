@@ -1,11 +1,13 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Download } from "lucide-react";
-import Map from "@/components/Map";
+// import Map from "@/components/Map";
 import { DriverRouteCard } from "@/components/DriverRouteCard";
+
+const VRPMap = React.lazy(() => import("@/components/VRPMap"));
 
 const Dashboard = () => {
   const driverRoutes = [
@@ -114,7 +116,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
-      <Map />
+      <div className="container mx-auto px-4">
+        <VRPMap />
+      </div>
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
