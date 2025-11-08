@@ -55,7 +55,9 @@ const DraggableStop = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="p-2 hover:bg-muted/30 transition-colors cursor-move"
+      {...attributes}
+      {...listeners}
+      className="p-2 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing touch-none"
     >
       <div className="flex items-start gap-3 text-xs">
         <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] mt-1">
@@ -79,11 +81,7 @@ const DraggableStop = ({
           </div>
         </div>
 
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing touch-none"
-        >
+        <div>
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
