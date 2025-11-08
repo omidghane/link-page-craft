@@ -13,7 +13,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 const VRPMap = React.lazy(() => import("@/components/VRPMap.jsx"));
 
@@ -274,15 +274,20 @@ const Dashboard = () => {
           <div className="flex gap-4 overflow-x-auto pb-4">
             {driverRoutes.map((route, index) => (
               <div key={index} className="flex-shrink-0 w-48">
-                <DriverRouteCard
-                  driverName={route.driverName}
-                  departureTime={route.departureTime}
-                  lastDeliveryTime={route.lastDeliveryTime}
-                  status={route.status}
-                  statusText={route.statusText}
-                  stops={route.stops}
-                  driverIndex={index}
-                />
+                <SortableContext
+                  items={route.stops.map((_, idx) => `${index}-${idx}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <DriverRouteCard
+                    driverName={route.driverName}
+                    departureTime={route.departureTime}
+                    lastDeliveryTime={route.lastDeliveryTime}
+                    status={route.status}
+                    statusText={route.statusText}
+                    stops={route.stops}
+                    driverIndex={index}
+                  />
+                </SortableContext>
               </div>
             ))}
           </div>
