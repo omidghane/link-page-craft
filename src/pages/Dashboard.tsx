@@ -4,13 +4,22 @@ import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Download } from "lucide-react";
-// import Map from "@/components/Map";
 import { DriverRouteCard } from "@/components/DriverRouteCard";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 
-const VRPMap = React.lazy(() => import("@/components/VRPMap"));
+const VRPMap = React.lazy(() => import("@/components/VRPMap.jsx"));
 
 const Dashboard = () => {
-  const driverRoutes = [
+  const [activeId, setActiveId] = useState(null);
+  const [driverRoutes, setDriverRoutes] = useState([
     {
       driverName: "علی حسینی",
       departureTime: "08:00",
@@ -110,7 +119,88 @@ const Dashboard = () => {
         { order: 5, customerId: "584383", departureTime: "14:00", arrivalTime: "14:30" },
       ],
     },
-  ];
+  ]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    if (!activeData || !overData) return;
+
+    const activeDriverIndex = activeData.driverIndex;
+    const activeStopIndex = activeData.stopIndex;
+    const overDriverIndex = overData.driverIndex;
+    const overStopIndex = overData.stopIndex;
+
+    if (activeDriverIndex === overDriverIndex) {
+      // Reorder within same driver
+      if (activeStopIndex !== overStopIndex) {
+        setDriverRoutes((routes) => {
+          const newRoutes = [...routes];
+          const stops = [...newRoutes[activeDriverIndex].stops];
+          const [movedStop] = stops.splice(activeStopIndex, 1);
+          stops.splice(overStopIndex, 0, movedStop);
+          
+          // Update order numbers
+          stops.forEach((stop, idx) => {
+            stop.order = idx + 1;
+          });
+          
+          newRoutes[activeDriverIndex] = {
+            ...newRoutes[activeDriverIndex],
+            stops,
+          };
+          return newRoutes;
+        });
+      }
+    } else {
+      // Move between drivers
+      setDriverRoutes((routes) => {
+        const newRoutes = [...routes];
+        const sourceStops = [...newRoutes[activeDriverIndex].stops];
+        const destStops = [...newRoutes[overDriverIndex].stops];
+        
+        const [movedStop] = sourceStops.splice(activeStopIndex, 1);
+        destStops.splice(overStopIndex, 0, movedStop);
+        
+        // Update order numbers for both routes
+        sourceStops.forEach((stop, idx) => {
+          stop.order = idx + 1;
+        });
+        destStops.forEach((stop, idx) => {
+          stop.order = idx + 1;
+        });
+        
+        newRoutes[activeDriverIndex] = {
+          ...newRoutes[activeDriverIndex],
+          stops: sourceStops,
+        };
+        newRoutes[overDriverIndex] = {
+          ...newRoutes[overDriverIndex],
+          stops: destStops,
+        };
+        
+        return newRoutes;
+      });
+    }
+  };
 
 
   return (
@@ -175,20 +265,28 @@ const Dashboard = () => {
         </div>
 
         {/* Driver Route Cards */}
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {driverRoutes.map((route, index) => (
-            <div key={index} className="flex-shrink-0 w-48">
-              <DriverRouteCard
-                driverName={route.driverName}
-                departureTime={route.departureTime}
-                lastDeliveryTime={route.lastDeliveryTime}
-                status={route.status}
-                statusText={route.statusText}
-                stops={route.stops}
-              />
-            </div>
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {driverRoutes.map((route, index) => (
+              <div key={index} className="flex-shrink-0 w-48">
+                <DriverRouteCard
+                  driverName={route.driverName}
+                  departureTime={route.departureTime}
+                  lastDeliveryTime={route.lastDeliveryTime}
+                  status={route.status}
+                  statusText={route.statusText}
+                  stops={route.stops}
+                  driverIndex={index}
+                />
+              </div>
+            ))}
+          </div>
+        </DndContext>
       </main>
     </div>
   );

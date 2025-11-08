@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, GripVertical } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface RouteStop {
   order: number;
@@ -16,7 +18,78 @@ interface DriverRouteCardProps {
   status: string;
   statusText: string;
   stops: RouteStop[];
+  driverIndex: number;
 }
+
+const DraggableStop = ({
+  stop,
+  driverIndex,
+  stopIndex,
+}: {
+  stop: RouteStop;
+  driverIndex: number;
+  stopIndex: number;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `${driverIndex}-${stopIndex}`,
+    data: {
+      driverIndex,
+      stopIndex,
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-2 hover:bg-muted/30 transition-colors cursor-move"
+    >
+      <div className="flex items-start gap-3 text-xs">
+        <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] mt-1">
+          {stop.order}
+        </div>
+
+        <div className="flex-1 flex gap-4 items-center">
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-muted-foreground">شناسه:</span>
+            <span className="font-mono font-medium text-[10px]">{stop.customerId}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-muted-foreground">حرکت:</span>
+            <span className="font-medium text-[10px]">{stop.departureTime}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-muted-foreground">رسیدن:</span>
+            <span className="font-medium text-[10px]">{stop.arrivalTime}</span>
+          </div>
+        </div>
+
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -38,6 +111,7 @@ export const DriverRouteCard = ({
   status,
   statusText,
   stops,
+  driverIndex,
 }: DriverRouteCardProps) => {
   return (
     <Card className="overflow-hidden">
@@ -71,34 +145,13 @@ export const DriverRouteCard = ({
       
       <CardContent className="p-0">
         <div className="divide-y divide-border">
-          {stops.map((stop) => (
-            <div
-              key={stop.customerId}
-              className="p-2 hover:bg-muted/30 transition-colors"
-            >
-              <div className="flex items-start gap-3 text-xs">
-                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] mt-1">
-                  {stop.order}
-                </div>
-
-                <div className="flex-1 flex gap-6 items-center overflow-x-auto">
-                  <div className="flex flex-col min-w-[1rem]">
-                    <p className="text-[9px] text-muted-foreground">شناسه</p>
-                    <p className="font-mono font-medium text-[10px]">{stop.customerId}</p>
-                  </div>
-
-                  <div className="flex flex-col min-w-[1rem]">
-                    <p className="text-[9px] text-muted-foreground">حرکت</p>
-                    <p className="font-medium text-[10px]">{stop.departureTime}</p>
-                  </div>
-
-                  <div className="flex flex-col min-w-[1rem]">
-                    <p className="text-[9px] text-muted-foreground">رسیدن</p>
-                    <p className="font-medium text-[10px]">{stop.arrivalTime}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {stops.map((stop, idx) => (
+            <DraggableStop
+              key={`${driverIndex}-${stop.customerId}`}
+              stop={stop}
+              driverIndex={driverIndex}
+              stopIndex={idx}
+            />
           ))}
         </div>
       </CardContent>
