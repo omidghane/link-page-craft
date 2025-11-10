@@ -15,7 +15,7 @@ import L from "leaflet";
 // --- Config your backend base URL here ---
 const API = axios.create({
   baseURL: "http://localhost:3000", // <- change to your backend
-  timeout: 60000,
+  timeout: 120000, // increased timeout to reduce false timeouts; adjust as needed
 });
 
 // --- Utils (ported) -------------------------------------------------
@@ -106,7 +106,9 @@ export default function VRPMap() {
   const [vehicles, setVehicles] = useState([]); // [[0, ..., 0], ...]
   const [geoms, setGeoms] = useState([]); // [{points, distance_m}, ...] aligned to vehicles
   const [loading, setLoading] = useState(true);
+  const [loadingGeoms, setLoadingGeoms] = useState(true); // <--- new
   const [errors, setErrors] = useState([]);
+  const [isReady, setIsReady] = useState(false);
 
   // center on depot (id === 0)
   const depotLatLng = useMemo(() => {
@@ -158,41 +160,277 @@ export default function VRPMap() {
     async function load() {
       setLoading(true);
       setErrors([]);
+      setLoadingGeoms(true);
       try {
         // 1) seed
+        console.log("Fetching map seed data...");
         const seed = await API.get("/api/map/seed");
         if (cancelled) return;
 
-        const rows = seed.data?.df || [];
+        const rows = seed.data?.df || []; 
         const vehs = seed.data?.vehicles || [];
         setDf(rows);
         setVehicles(vehs);
 
-        // 2) fetch geometry for each route from backend (your cached ORS logic)
-        const promises = vehs.map((route) =>
-          API.post("/api/route-geometry", {
-            route,
-            routeKey: getRouteKey(route),
-          })
-            .then((r) => ({
-              points: r.data?.points || [],
-              distance_m: Number(r.data?.distance_m || 0),
-            }))
-            .catch((e) => {
-              return { points: [], distance_m: 0, error: e?.message || "route error" };
-            })
-        );
-        const results = await Promise.all(promises);
-        if (cancelled) return;
+        // helper: poll a Celery task until finished (expects GET /api/task/:taskId)
+        interface TaskResult {
+          points?: number[][];
+          distance_m?: number | string;
+        }
 
-        // Default values for testing without API
-        // const results = vehs.map((route, idx) => ({
-        //   points: route.map((_, i) => [51.5 + idx * 0.01, -0.09 + i * 0.01]),
-        //   distance_m: route.length * 1000,
-        // }));
-        // if (cancelled) return;
+        interface TaskStatusResponse {
+          status?: "pending" | "started" | "success" | "failure" | string;
+          result?: TaskResult | null;
+          error?: string | null;
+        }
+
+        interface PollResult {
+          points: number[][];
+          distance_m: number;
+          error?: string;
+        }
+
+        interface PollTaskOptions {
+          interval?: number;
+          timeout?: number;
+          // support both AbortSignal and a simple { aborted: boolean } used in this file
+          signal?: AbortSignal | { aborted: boolean };
+        }
+
+        async function pollTask(
+          taskId: string | number,
+          { interval = 10000, timeout = 200000, signal }: PollTaskOptions = {}
+        ): Promise<PollResult> {
+          const deadline = Date.now() + timeout;
+          console.log(
+            `pollTask ${taskId} started (interval=${interval}ms timeout=${timeout}ms)`,
+            { deadline }
+          );
+
+          while (true) {
+            if ((signal as { aborted: boolean })?.aborted) {
+              console.log(`pollTask ${taskId} aborted by signal`);
+              throw new Error("cancelled");
+            }
+
+            try {
+              console.log(`pollTask ${taskId}: requesting status`);
+              const res = await API.get<TaskStatusResponse>(
+                `/api/task-status/${taskId}`
+              );
+              const status = res.data?.status;
+              console.log(`pollTask ${taskId}: got status`, { status, data: res.data });
+
+              if (status === "success" && res.data?.result) {
+                console.log(
+                  `pollTask ${taskId}: success`,
+                  {
+                    pointsCount: res.data.result.points?.length ?? 0,
+                    distance_m: res.data.result.distance_m,
+                  }
+                );
+                return {
+                  points: res.data.result.points || [],
+                  distance_m: Number(res.data.result.distance_m || 0),
+                };
+              }
+
+              if (status === "failure" || res.data?.error) {
+                console.error(
+                  `pollTask ${taskId}: task failed`,
+                  res.data?.error ?? res.data
+                );
+                return {
+                  points: [],
+                  distance_m: 0,
+                  error: res.data?.error || "task failed",
+                };
+              }
+
+              // otherwise still queued/started -> continue polling
+              console.log(`pollTask ${taskId}: still pending/started, will retry`);
+            } catch (err: any) {
+              // network error while polling — treat as transient and continue until timeout
+              console.warn(
+                `pollTask ${taskId} network error:`,
+                err?.message || err
+              );
+            }
+
+            if (Date.now() > deadline) {
+              console.error(`pollTask ${taskId}: deadline reached`);
+              return {
+                points: [],
+                distance_m: 0,
+                error: `timeout waiting for task ${taskId}`,
+              };
+            }
+
+            console.log(`pollTask ${taskId}: sleeping ${interval}ms before next check`);
+            await new Promise((r) => setTimeout(r, interval));
+          }
+        }
+
+        // helper to request all route geometries via Celery: enqueue then poll all tasks
+        const fetchAllGeoms = async () => {
+          // 1) enqueue all tasks and collect task ids
+          const startPromises = (vehs || []).map((route) =>
+            API.post("/api/route-geometry", {
+              route,
+              routeKey: getRouteKey(route),
+            })
+              .then((r) => ({
+                taskId: r.data?.task_id || r.data?.task?.id,
+                error: r.data?.error,
+              }))
+              .catch((e) => ({
+                taskId: null,
+                error: e?.message || "enqueue error",
+              }))
+          );
+
+          const starts = await Promise.all(startPromises);
+
+          // 2) poll each task (or return immediate error if enqueue failed)
+          const pollPromises = starts.map((s) => {
+            if (!s.taskId) {
+              return Promise.resolve({
+                points: [],
+                distance_m: 0,
+                error: s.error || "no task id",
+              });
+            }
+            return pollTask(s.taskId, {
+              interval: 1000,
+              timeout: 120000,
+              signal: { aborted: cancelled },
+            }).catch((e) => ({
+              points: [],
+              distance_m: 0,
+              error: e?.message || "poll error",
+            }));
+          });
+
+          // Wait for all polls to finish and return aligned array
+          return Promise.all(pollPromises);
+        };
+
+        // --- enqueue tasks once (do not re-enqueue on retry) ---
+        const starts = await Promise.all(
+          (vehs || []).map((route) => {
+            console.log(`Enqueuing task for route: ${route}`);
+            return API.post("/api/route-geometry", {
+              route,
+              routeKey: getRouteKey(route),
+            })
+              .then((r) => ({
+                taskId: r.data?.task_id || r.data?.task?.id,
+                error: r.data?.error,
+              }))
+              .catch((e) => ({
+                taskId: null,
+                error: e?.message || "enqueue error",
+              }));
+          })
+        );
+
+        if (cancelled) return;
+ console.log("All tasks enqueued. Starting polling process.");
+
+        // retry polling only; do not POST again
+        const maxAttempts = 3;
+        let attempt = 0;
+        let results: PollResult[] = [];
+        let hadFailure = false;
+
+        while (attempt < maxAttempts && !cancelled) {
+          attempt += 1;
+          console.log(`Polling route geometries (attempt ${attempt})...`);
+
+          // poll all tasks concurrently (or return immediate error if enqueue failed)
+          const pollPromises = starts.map((s) => {
+            if (!s.taskId) {
+              return Promise.resolve({
+                points: [],
+                distance_m: 0,
+                error: s.error || "no task id",
+              });
+            }
+            return pollTask(s.taskId, {
+              interval: 10000,
+              timeout: 200000,
+              signal: { aborted: cancelled },
+            }).catch((e) => ({
+              points: [],
+              distance_m: 0,
+              error: e?.message || "poll error",
+            }));
+          });
+
+          results = await Promise.all(pollPromises);
+ console.log(`Polling attempt ${attempt} completed. Results:`, results);
+          if (cancelled) return;
+
+          const failures = results
+            .map((r, i) => ({
+              idx: i,
+              ok: !!r && Array.isArray(r.points) && !r.error,
+              r,
+            }))
+            .filter((x) => !x.ok);
+
+          if (failures.length === 0) {
+ console.log(`Polling attempt ${attempt}: All tasks successful.`);
+            hadFailure = false;
+            break; // all good
+          }
+
+          hadFailure = true;
+          console.warn(
+            `Polling attempt ${attempt} had ${failures.length} failures:`,
+            failures.map((f) => ({
+              idx: f.idx,
+              err: f.r?.error ?? "null/invalid",
+            }))
+          );
+
+          if (attempt < maxAttempts) {
+            // backoff before next poll attempt (do NOT re-enqueue)
+ console.log(`Polling attempt ${attempt}: Retrying in ${800 * attempt}ms...`);
+            await new Promise((res) => setTimeout(res, 800 * attempt));
+            continue;
+          } else {
+            break; // exhausted retries
+ console.log(`Polling attempt ${attempt}: Max retries reached.`);
+          }
+        }
+
         setGeoms(results);
+
+        if (hadFailure) {
+          // surface aggregated message
+          const failures = results
+            .map((r, i) => ({
+              idx: i,
+              err: r?.error ?? (r ? null : "null result"),
+            }))
+            .filter((f) => f.err);
+          const msgs = failures.length
+            ? failures.map((f) => `veh ${f.idx + 1}: ${f.err}`).join(" | ")
+            : "Some routes returned invalid geometry";
+          console.error("Route geometry failures after retries:", msgs);
+          if (!cancelled)
+            setErrors((prev) => [...prev, `Route geometry failed: ${msgs}`]);
+          // keep loadingGeoms false and do NOT mark ready — prevents map rendering
+          setLoadingGeoms(false);
+          return;
+        }
+
+        // all good
+        setLoadingGeoms(false);
+        setIsReady(true); // only mark ready when no route errors
       } catch (e) {
+        console.error("VRPMap load error:", e);
         if (!cancelled)
           setErrors((prev) => [...prev, e?.message || "load error"]);
       } finally {
@@ -201,10 +439,37 @@ export default function VRPMap() {
     }
 
     load();
+
     return () => {
       cancelled = true;
     };
   }, []);
+
+  if (loading || loadingGeoms) {
+    return (
+      <div>
+        <div>Loading map (fetching routes)...</div>
+        {!!errors.length && (
+          <div style={{ color: "crimson", marginTop: 8 }}>
+            {errors.join(" | ")}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <div>
+        <div>Initializing map...</div>
+        {!!errors.length && (
+          <div style={{ color: "crimson", marginTop: 8 }}>
+            {errors.join(" | ")}
+          </div>
+        )}
+      </div>
+    ); // Optional: placeholder while initializing
+  }
 
   return (
     <div
@@ -378,10 +643,9 @@ function DistanceLog({ geoms }) {
   if (!geoms?.length) return null;
   return (
     <div style={{ fontFamily: "monospace", fontSize: 13 }}>
-      <div>📏 Total Distance Traveled by Each Vehicle:</div>
-      {geoms.map((g, i) => (
-        <div key={`d-${i}`}>
-          🚚 Vehicle {i + 1}: {(Number(g.distance_m || 0) / 1000).toFixed(2)} km
+      {geoms.map((geom, idx) => (
+        <div key={idx}>
+          🚚 Vehicle {idx + 1}: {(geom.distance_m / 1000).toFixed(2)} km
         </div>
       ))}
     </div>

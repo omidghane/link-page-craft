@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install --no-audit --no-fund
+RUN npm install --verbose --no-audit --no-fund
 
 # ---- dev stage ----
 FROM base AS dev
