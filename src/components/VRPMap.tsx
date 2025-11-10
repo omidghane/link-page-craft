@@ -1,4 +1,4 @@
-// VRPMap.jsx
+// VRPMap.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
@@ -8,7 +8,7 @@ import {
   Popup,
   Polyline,
   LayersControl,
-  LayerGroup, 
+  LayerGroup,
 } from "react-leaflet";
 import L from "leaflet";
 
@@ -18,9 +18,12 @@ const API = axios.create({
   timeout: 120000, // increased timeout to reduce false timeouts; adjust as needed
 });
 
+// --- import the shared hook ---
+import { useSeedData } from "../hooks/useSeedData";
+
 // --- Utils (ported) -------------------------------------------------
 
-function safeMinToHHMM(value) {
+function safeMinToHHMM(value: any) {
   try {
     if (value === null || value === undefined) return "--:--";
     const hours = Math.floor(value / 60);
@@ -34,7 +37,7 @@ function safeMinToHHMM(value) {
   }
 }
 
-function getRouteKey(route) {
+function getRouteKey(route: number[]) {
   return route.join("-");
 }
 
@@ -62,7 +65,7 @@ const TAB20 = [
 ];
 
 // Small, unobtrusive circle number marker for stops
-function stopIndexIcon(color, text) {
+function stopIndexIcon(color: string, text: string) {
   return L.divIcon({
     className: "stop-index-icon",
     html: `
@@ -102,12 +105,17 @@ const unassignedIcon = L.icon({
  */
 
 export default function VRPMap() {
-  const [df, setDf] = useState([]); // dataframe rows from backend
-  const [vehicles, setVehicles] = useState([]); // [[0, ..., 0], ...]
-  const [geoms, setGeoms] = useState([]); // [{points, distance_m}, ...] aligned to vehicles
-  const [loading, setLoading] = useState(true);
-  const [loadingGeoms, setLoadingGeoms] = useState(true); // <--- new
-  const [errors, setErrors] = useState([]);
+  // --- use the shared hook instead of local API call ---
+  const {
+    rows: df,
+    vehs: vehicles,
+    loading: seedLoading,
+    error: seedError,
+  } = useSeedData();
+
+  const [geoms, setGeoms] = useState<any[]>([]);
+  const [loadingGeoms, setLoadingGeoms] = useState(true);
+  const [errors, setErrors] = useState<string[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   // center on depot (id === 0)
@@ -141,7 +149,7 @@ export default function VRPMap() {
 
   // assigned & unassigned customers
   const { assigned, unassigned } = useMemo(() => {
-    const assignedSet = new Set();
+    const assignedSet = new Set<number>();
     (vehicles || []).forEach((route) =>
       route.forEach((id) => assignedSet.add(id))
     );
@@ -158,19 +166,15 @@ export default function VRPMap() {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
-      setErrors([]);
-      setLoadingGeoms(true);
       try {
-        // 1) seed
-        console.log("Fetching map seed data...");
-        const seed = await API.get("/api/map/seed");
-        if (cancelled) return;
-
-        const rows = seed.data?.df || []; 
-        const vehs = seed.data?.vehicles || [];
-        setDf(rows);
-        setVehicles(vehs);
+        setErrors([]);
+        setLoadingGeoms(true);
+        // --- skip seed fetch, use hook values ---
+        if (!df || !Array.isArray(df) || df.length === 0 || !vehicles) {
+            console.warn("df or vehicles are not ready yet");
+            return;
+        }
+        console.log("Starting to fetch route geometries...");
 
         // helper: poll a Celery task until finished (expects GET /api/task/:taskId)
         interface TaskResult {
@@ -219,16 +223,22 @@ export default function VRPMap() {
                 `/api/task-status/${taskId}`
               );
               const status = res.data?.status;
-              console.log(`pollTask ${taskId}: got status`, { status, data: res.data });
+              console.log(`pollTask ${taskId}: got status`, {
+                status,
+                data: res.data,
+              });
 
               if (status === "success" && res.data?.result) {
+                // Increment enqueueSuccess and log the success
+                enqueueSuccess += 1;
                 console.log(
-                  `pollTask ${taskId}: success`,
-                  {
-                    pointsCount: res.data.result.points?.length ?? 0,
-                    distance_m: res.data.result.distance_m,
-                  }
+                  `Enqueued ${enqueueSuccess}/${enqueueTotal} /api/route-geometry requests succeeded so far`
                 );
+
+                console.log(`pollTask ${taskId}: success`, {
+                  pointsCount: res.data.result.points?.length ?? 0,
+                  distance_m: res.data.result.distance_m,
+                });
                 return {
                   points: res.data.result.points || [],
                   distance_m: Number(res.data.result.distance_m || 0),
@@ -248,7 +258,9 @@ export default function VRPMap() {
               }
 
               // otherwise still queued/started -> continue polling
-              console.log(`pollTask ${taskId}: still pending/started, will retry`);
+              console.log(
+                `pollTask ${taskId}: still pending/started, will retry`
+              );
             } catch (err: any) {
               // network error while polling — treat as transient and continue until timeout
               console.warn(
@@ -266,67 +278,86 @@ export default function VRPMap() {
               };
             }
 
-            console.log(`pollTask ${taskId}: sleeping ${interval}ms before next check`);
+            console.log(
+              `pollTask ${taskId}: sleeping ${interval}ms before next check`
+            );
             await new Promise((r) => setTimeout(r, interval));
           }
         }
 
         // helper to request all route geometries via Celery: enqueue then poll all tasks
-        const fetchAllGeoms = async () => {
-          // 1) enqueue all tasks and collect task ids
-          const startPromises = (vehs || []).map((route) =>
-            API.post("/api/route-geometry", {
-              route,
-              routeKey: getRouteKey(route),
-            })
-              .then((r) => ({
-                taskId: r.data?.task_id || r.data?.task?.id,
-                error: r.data?.error,
-              }))
-              .catch((e) => ({
-                taskId: null,
-                error: e?.message || "enqueue error",
-              }))
-          );
+        // const fetchAllGeoms = async () => {
+        //   // 1) enqueue all tasks and collect task ids
+        //   let enqSuccessCount = 0;
+        //   const enqTotal = (vehicles || []).length;
+        //   const startPromises = (vehicles || []).map((route) =>
+        //     API.post("/api/route-geometry", {
+        //       route,
+        //       routeKey: getRouteKey(route),
+        //     })
+        //       .then((r) => {
+        //         const taskId = r.data?.task_id || r.data?.task?.id;
+        //         if (taskId) {
+        //           enqSuccessCount += 1;
+        //           console.log(
+        //             `Enqueued ${enqSuccessCount}/${enqTotal} /api/route-geometry requests succeeded so far`
+        //           );
+        //         }
+        //         return {
+        //           taskId,
+        //           error: r.data?.error,
+        //         };
+        //       })
+        //       .catch((e) => ({
+        //         taskId: null,
+        //         error: e?.message || "enqueue error",
+        //       }))
+        //   );
 
-          const starts = await Promise.all(startPromises);
+        //   const starts = await Promise.all(startPromises);
 
-          // 2) poll each task (or return immediate error if enqueue failed)
-          const pollPromises = starts.map((s) => {
-            if (!s.taskId) {
-              return Promise.resolve({
-                points: [],
-                distance_m: 0,
-                error: s.error || "no task id",
-              });
-            }
-            return pollTask(s.taskId, {
-              interval: 1000,
-              timeout: 120000,
-              signal: { aborted: cancelled },
-            }).catch((e) => ({
-              points: [],
-              distance_m: 0,
-              error: e?.message || "poll error",
-            }));
-          });
+        //   // 2) poll each task (or return immediate error if enqueue failed)
+        //   const pollPromises = starts.map((s) => {
+        //     if (!s.taskId) {
+        //       return Promise.resolve({
+        //         points: [],
+        //         distance_m: 0,
+        //         error: s.error || "no task id",
+        //       });
+        //     }
+        //     return pollTask(s.taskId, {
+        //       interval: 1000,
+        //       timeout: 120000,
+        //       signal: { aborted: cancelled },
+        //     }).catch((e) => ({
+        //       points: [],
+        //       distance_m: 0,
+        //       error: e?.message || "poll error",
+        //     }));
+        //   });
 
-          // Wait for all polls to finish and return aligned array
-          return Promise.all(pollPromises);
-        };
+        //   // Wait for all polls to finish and return aligned array
+        //   return Promise.all(pollPromises);
+        // };
 
         // --- enqueue tasks once (do not re-enqueue on retry) ---
+        // track how many POSTs to /api/route-geometry have succeeded so far
+        let enqueueSuccess = 0;
+        const enqueueTotal = (vehicles || []).length;
         const starts = await Promise.all(
-          (vehs || []).map((route) => {
+          (vehicles || []).map((route) => {
             console.log(`Enqueuing task for route: ${route}`);
             return API.post("/api/route-geometry", {
               route,
               routeKey: getRouteKey(route),
             })
-              .then((r) => ({
-                taskId: r.data?.task_id || r.data?.task?.id,
-                error: r.data?.error,
-              }))
+              .then((r) => {
+                const taskId = r.data?.task_id || r.data?.task?.id;
+                return {
+                  taskId,
+                  error: r.data?.error,
+                };
+              })
               .catch((e) => ({
                 taskId: null,
                 error: e?.message || "enqueue error",
@@ -335,7 +366,7 @@ export default function VRPMap() {
         );
 
         if (cancelled) return;
- console.log("All tasks enqueued. Starting polling process.");
+        console.log("All tasks enqueued. Starting polling process.");
 
         // retry polling only; do not POST again
         const maxAttempts = 3;
@@ -368,7 +399,10 @@ export default function VRPMap() {
           });
 
           results = await Promise.all(pollPromises);
- console.log(`Polling attempt ${attempt} completed. Results:`, results);
+          console.log(
+            `Polling attempt ${attempt} completed. Results:`,
+            results
+          );
           if (cancelled) return;
 
           const failures = results
@@ -380,7 +414,7 @@ export default function VRPMap() {
             .filter((x) => !x.ok);
 
           if (failures.length === 0) {
- console.log(`Polling attempt ${attempt}: All tasks successful.`);
+            console.log(`Polling attempt ${attempt}: All tasks successful.`);
             hadFailure = false;
             break; // all good
           }
@@ -396,12 +430,14 @@ export default function VRPMap() {
 
           if (attempt < maxAttempts) {
             // backoff before next poll attempt (do NOT re-enqueue)
- console.log(`Polling attempt ${attempt}: Retrying in ${800 * attempt}ms...`);
+            console.log(
+              `Polling attempt ${attempt}: Retrying in ${800 * attempt}ms...`
+            );
             await new Promise((res) => setTimeout(res, 800 * attempt));
             continue;
           } else {
             break; // exhausted retries
- console.log(`Polling attempt ${attempt}: Max retries reached.`);
+            console.log(`Polling attempt ${attempt}: Max retries reached.`);
           }
         }
 
@@ -434,18 +470,17 @@ export default function VRPMap() {
         if (!cancelled)
           setErrors((prev) => [...prev, e?.message || "load error"]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadingGeoms(false);
       }
     }
-
     load();
-
+    
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [df, vehicles]); // depend on hook values
 
-  if (loading || loadingGeoms) {
+  if (seedLoading || loadingGeoms) {
     return (
       <div>
         <div>Loading map (fetching routes)...</div>
@@ -454,6 +489,14 @@ export default function VRPMap() {
             {errors.join(" | ")}
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (seedError) {
+    return (
+      <div>
+        <div>Error loading seed data: {seedError}</div>
       </div>
     );
   }
@@ -482,14 +525,14 @@ export default function VRPMap() {
     >
       <header style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <h2 style={{ margin: 0 }}>VRP Map</h2>
-        {loading && <span>loading…</span>}
+        {(seedLoading || loadingGeoms) && <span>loading…</span>}
         {!!errors.length && (
-          <span style={{ color: "crimson" }}>{errors.join(" | ")}</span>
+            <span style={{ color: "crimson" }}>{errors.join(" | ")}</span>
         )}
       </header>
       {Array.isArray(df) && df.length > 0 ? (
         <MapContainer
-          center={depotLatLng}
+          center={depotLatLng as any}
           zoom={12}
           style={{ height: "75vh", width: "100%", borderRadius: 8 }}
         >
@@ -618,7 +661,7 @@ export default function VRPMap() {
             justifyContent: "center",
           }}
         >
-          <span>{loading ? "Loading map data…" : "No map data available"}</span>
+          <span>{loadingGeoms ? "Loading map data…" : "No map data available"}</span>
         </div>
       )}
 
@@ -629,17 +672,17 @@ export default function VRPMap() {
 }
 
 // POST to backend to assign a customer (stub; implement server-side)
-async function assignCustomer(customerId) {
+async function assignCustomer(customerId: any) {
   try {
     await API.post("/api/assign-customer", { customerId });
     alert(`Customer ${customerId} assignment requested`);
     // optionally trigger a refetch sequence
-  } catch (e) {
+  } catch (e: any) {
     alert(`Failed to assign customer ${customerId}: ${e?.message || "error"}`);
   }
 }
 
-function DistanceLog({ geoms }) {
+function DistanceLog({ geoms }: { geoms: any[] }) {
   if (!geoms?.length) return null;
   return (
     <div style={{ fontFamily: "monospace", fontSize: 13 }}>

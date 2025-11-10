@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
@@ -14,112 +14,48 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSeedData } from "../hooks/useSeedData";
 
-const VRPMap = React.lazy(() => import("@/components/VRPMap.jsx"));
+const VRPMap = React.lazy(() => import("@/components/VRPMap"));
 
 const Dashboard = () => {
+  const { rows, vehs, loading, error } = useSeedData();
   const [activeId, setActiveId] = useState(null);
-  const [driverRoutes, setDriverRoutes] = useState([
-    {
-      driverName: "علی حسینی",
-      departureTime: "08:00",
-      lastDeliveryTime: "12:30",
-      status: "delivered",
-      statusText: "تحویل شده",
-      stops: [
-        { order: 1, customerId: "584353", departureTime: "08:00", arrivalTime: "08:45" },
-        { order: 2, customerId: "584354", departureTime: "09:00", arrivalTime: "09:30" },
-        { order: 3, customerId: "584355", departureTime: "09:45", arrivalTime: "10:15" },
-        { order: 4, customerId: "584356", departureTime: "10:30", arrivalTime: "11:00" },
-        { order: 5, customerId: "584357", departureTime: "11:15", arrivalTime: "12:30" },
-      ],
-    },
-    {
-      driverName: "علی حسینی",
-      departureTime: "08:00",
-      lastDeliveryTime: "12:30",
-      status: "delivered",
-      statusText: "تحویل شده",
-      stops: [
-        { order: 1, customerId: "584353", departureTime: "08:00", arrivalTime: "08:45" },
-        { order: 2, customerId: "584354", departureTime: "09:00", arrivalTime: "09:30" },
-        { order: 3, customerId: "584355", departureTime: "09:45", arrivalTime: "10:15" },
-        { order: 4, customerId: "584356", departureTime: "10:30", arrivalTime: "11:00" },
-        { order: 5, customerId: "584357", departureTime: "11:15", arrivalTime: "12:30" },
-      ],
-    },
-    {
-      driverName: "زهرا احمدی",
-      departureTime: "09:00",
-      lastDeliveryTime: "14:00",
-      status: "in-transit",
-      statusText: "در حال انتقال",
-      stops: [
-        { order: 1, customerId: "584358", departureTime: "09:00", arrivalTime: "09:45" },
-        { order: 2, customerId: "584359", departureTime: "10:00", arrivalTime: "10:40" },
-        { order: 3, customerId: "584360", departureTime: "11:00", arrivalTime: "11:45" },
-        { order: 4, customerId: "584361", departureTime: "12:00", arrivalTime: "13:15" },
-        { order: 5, customerId: "584362", departureTime: "13:30", arrivalTime: "14:00" },
-      ],
-    },
-    {
-      driverName: "رضا کریمی",
-      departureTime: "10:00",
-      lastDeliveryTime: "15:30",
-      status: "pending",
-      statusText: "منتظر",
-      stops: [
-        { order: 1, customerId: "584363", departureTime: "10:00", arrivalTime: "10:50" },
-        { order: 2, customerId: "584364", departureTime: "11:00", arrivalTime: "11:45" },
-        { order: 3, customerId: "584365", departureTime: "12:00", arrivalTime: "13:00" },
-        { order: 4, customerId: "584366", departureTime: "13:15", arrivalTime: "14:15" },
-        { order: 5, customerId: "584367", departureTime: "14:30", arrivalTime: "15:30" },
-      ],
-    },
-    {
-      driverName: "فاطمه رضایی",
-      departureTime: "07:30",
-      lastDeliveryTime: "13:00",
-      status: "delivered",
-      statusText: "تحویل شده",
-      stops: [
-        { order: 1, customerId: "584368", departureTime: "07:30", arrivalTime: "08:15" },
-        { order: 2, customerId: "584369", departureTime: "08:30", arrivalTime: "09:15" },
-        { order: 3, customerId: "584370", departureTime: "09:30", arrivalTime: "10:30" },
-        { order: 4, customerId: "584371", departureTime: "10:45", arrivalTime: "11:45" },
-        { order: 5, customerId: "584372", departureTime: "12:00", arrivalTime: "13:00" },
-      ],
-    },
-    {
-      driverName: "محمد نوری",
-      departureTime: "08:30",
-      lastDeliveryTime: "16:00",
-      status: "in-transit",
-      statusText: "در حال انتقال",
-      stops: [
-        { order: 1, customerId: "584373", departureTime: "08:30", arrivalTime: "09:30" },
-        { order: 2, customerId: "584374", departureTime: "09:45", arrivalTime: "10:45" },
-        { order: 3, customerId: "584375", departureTime: "11:00", arrivalTime: "12:15" },
-        { order: 4, customerId: "584376", departureTime: "12:30", arrivalTime: "13:45" },
-        { order: 5, customerId: "584377", departureTime: "14:00", arrivalTime: "15:00" },
-        { order: 6, customerId: "584378", departureTime: "15:15", arrivalTime: "16:00" },
-      ],
-    },
-    {
-      driverName: "نادا احمدی",
-      departureTime: "09:30",
-      lastDeliveryTime: "14:30",
-      status: "pending",
-      statusText: "منتظر",
-      stops: [
-        { order: 1, customerId: "584379", departureTime: "09:30", arrivalTime: "10:15" },
-        { order: 2, customerId: "584380", departureTime: "10:30", arrivalTime: "11:15" },
-        { order: 3, customerId: "584381", departureTime: "11:30", arrivalTime: "12:30" },
-        { order: 4, customerId: "584382", departureTime: "12:45", arrivalTime: "13:45" },
-        { order: 5, customerId: "584383", departureTime: "14:00", arrivalTime: "14:30" },
-      ],
-    },
-  ]);
+  const [driverRoutes, setDriverRoutes] = useState([]);
+
+  useEffect(() => {
+    if (!rows || !vehs || rows.length === 0 || vehs.length === 0) return;
+
+    // Map vehs to driverRoutes
+    const updatedDriverRoutes = vehs.map((vehicle, vehicleIndex) => {
+      const stops = vehicle.map((customerId, stopIndex) => {
+        // Find the corresponding row for the customer
+        const customerRow = rows.find((row) => row.id === customerId);
+
+        return {
+          order: stopIndex + 1,
+          customerId: customerRow?.id || "Unknown",
+          departureTime: customerRow?.ready_time
+            ? safeMinToHHMM(customerRow.ready_time)
+            : "--:--",
+          arrivalTime: customerRow?.arrival_time
+            ? safeMinToHHMM(customerRow.arrival_time)
+            : "--:--",
+        };
+      });
+
+      return {
+        driverName: `Driver ${vehicleIndex + 1}`, // Placeholder driver name
+        departureTime: stops[0]?.departureTime || "--:--",
+        lastDeliveryTime: stops[stops.length - 1]?.arrivalTime || "--:--",
+        status: "pending", // Default status
+        statusText: "منتظر", // Default status text
+        stops,
+      };
+    });
+
+    setDriverRoutes(updatedDriverRoutes);
+  }, [rows, vehs]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -202,6 +138,10 @@ const Dashboard = () => {
     }
   };
 
+
+  // Example usage:
+  if (loading) return <div>Loading seed data...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -296,5 +236,17 @@ const Dashboard = () => {
     </div>
   );
 };
+
+// Helper function to convert minutes to HH:MM format
+function safeMinToHHMM(value) {
+  try {
+    if (value === null || value === undefined) return "--:--";
+    const hours = Math.floor(value / 60);
+    const minutes = Math.floor(value % 60);
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  } catch {
+    return "--:--";
+  }
+}
 
 export default Dashboard;

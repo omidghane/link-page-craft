@@ -64,20 +64,22 @@ const DraggableStop = ({
           {stop.order}
         </div>
 
-        <div className="flex-1 flex gap-4 items-center">
+        <div className="flex-1 flex flex-col gap-1 items-start">
           <div className="flex items-center gap-1">
             <span className="text-[9px] text-muted-foreground">شناسه:</span>
             <span className="font-mono font-medium text-[10px]">{stop.customerId}</span>
           </div>
 
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-muted-foreground">حرکت:</span>
-            <span className="font-medium text-[10px]">{stop.departureTime}</span>
-          </div>
+          <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] text-muted-foreground">حرکت:</span>
+              <span className="font-medium text-[10px]">{stop.departureTime}</span>
+            </div>
 
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-muted-foreground">رسیدن:</span>
-            <span className="font-medium text-[10px]">{stop.arrivalTime}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] text-muted-foreground">رسیدن:</span>
+              <span className="font-medium text-[10px]">{stop.arrivalTime}</span>
+            </div>
           </div>
         </div>
 
