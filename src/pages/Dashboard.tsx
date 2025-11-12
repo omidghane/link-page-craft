@@ -222,11 +222,17 @@ const Dashboard = () => {
                   return stop.customerId !== 0; // Keep only valid stops
                 });
 
+                // Re-number the orders after filtering to start from 1
+                const reorderedStops = validStops.map((stop, idx) => ({
+                  ...stop,
+                  order: idx + 1
+                }));
+
                 // console.log(`Route "${route.driverName}" valid stops:`, validStops);
 
                 return {
                   ...route,
-                  stops: validStops, // Replace stops with valid stops
+                  stops: reorderedStops, // Replace stops with reordered stops
                 };
               }).filter((route) => route.stops.length > 0); // Keep only routes with valid stops
 
