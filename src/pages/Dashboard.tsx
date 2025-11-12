@@ -157,9 +157,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
-      <div className="container mx-auto px-4">
-        {/* <VRPMap /> */}
-      </div>
+      {/* <div className="container mx-auto px-4">
+        <VRPMap />
+      </div> */}
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
