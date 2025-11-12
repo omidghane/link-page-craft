@@ -84,7 +84,7 @@ const Dashboard = () => {
     setActiveId(null);
     setActiveStop(null);
 
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
     const activeData = active.data.current;
     const overData = over.data.current;
@@ -97,16 +97,18 @@ const Dashboard = () => {
     const overStopIndex = overData.stopIndex;
 
     if (activeDriverIndex === overDriverIndex) {
-      // Reorder within same driver
+      // Reorder within same driver using arrayMove for correct positioning
       if (activeStopIndex !== overStopIndex) {
         setDriverRoutes((routes) => {
           const newRoutes = [...routes];
-          const stops = [...newRoutes[activeDriverIndex].stops];
-          const [movedStop] = stops.splice(activeStopIndex, 1);
-          stops.splice(overStopIndex, 0, movedStop);
+          const stops = arrayMove(
+            newRoutes[activeDriverIndex].stops,
+            activeStopIndex,
+            overStopIndex
+          );
           
           // Update order numbers
-          stops.forEach((stop, idx) => {
+          stops.forEach((stop: any, idx) => {
             stop.order = idx + 1;
           });
           
