@@ -72,12 +72,8 @@ const DraggableStop = ({
 
           <div className="flex gap-4 items-center">
             <div className="flex items-center gap-1">
-              <span className="text-[9px] text-muted-foreground">حرکت:</span>
               <span className="font-medium text-[10px]">{stop.departureTime}</span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] text-muted-foreground">رسیدن:</span>
+              <span className="text-[9px] text-muted-foreground">→</span>
               <span className="font-medium text-[10px]">{stop.arrivalTime}</span>
             </div>
           </div>

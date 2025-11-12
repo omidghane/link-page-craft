@@ -34,12 +34,12 @@ const Dashboard = () => {
 
         return {
           order: stopIndex + 1,
-          customerId: customerRow?.id || "Unknown",
-          departureTime: customerRow?.ready_time
-            ? safeMinToHHMM(customerRow.ready_time)
+          customerId: customerRow?.id ,
+          departureTime: customerRow?.start_service
+            ? safeMinToHHMM(customerRow.start_service)
             : "--:--",
-          arrivalTime: customerRow?.arrival_time
-            ? safeMinToHHMM(customerRow.arrival_time)
+          arrivalTime: customerRow?.finish_service
+            ? safeMinToHHMM(customerRow.finish_service)
             : "--:--",
         };
       });
@@ -212,24 +212,45 @@ const Dashboard = () => {
           onDragEnd={handleDragEnd}
         >
           <div className="flex gap-4 overflow-x-auto pb-4">
-            {driverRoutes.map((route, index) => (
-              <div key={index} className="flex-shrink-0 w-48">
-                <SortableContext
-                  items={route.stops.map((_, idx) => `${index}-${idx}`)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <DriverRouteCard
-                    driverName={route.driverName}
-                    departureTime={route.departureTime}
-                    lastDeliveryTime={route.lastDeliveryTime}
-                    status={route.status}
-                    statusText={route.statusText}
-                    stops={route.stops}
-                    driverIndex={index}
-                  />
-                </SortableContext>
-              </div>
-            ))}
+            {(() => {
+              // console.log("Driver Routes (before filtering):", JSON.stringify(driverRoutes, null, 2)); // Log the full driverRoutes array
+
+              const filteredRoutes = driverRoutes.map((route) => {
+                // Filter out stops with customerId === 0
+                const validStops = route.stops.filter((stop) => {
+                  // console.log(`Checking stop: ${JSON.stringify(stop)}`); // Log each stop
+                  return stop.customerId !== 0; // Keep only valid stops
+                });
+
+                // console.log(`Route "${route.driverName}" valid stops:`, validStops);
+
+                return {
+                  ...route,
+                  stops: validStops, // Replace stops with valid stops
+                };
+              }).filter((route) => route.stops.length > 0); // Keep only routes with valid stops
+
+              // console.log("Filtered Routes (excluding stops with id 0):", JSON.stringify(filteredRoutes, null, 2)); // Log the filtered routes
+
+              return filteredRoutes.map((route, index) => (
+                <div key={index} className="flex-shrink-0 w-48">
+                  <SortableContext
+                    items={route.stops.map((_, idx) => `${index}-${idx}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <DriverRouteCard
+                      driverName={route.driverName}
+                      departureTime={route.departureTime}
+                      lastDeliveryTime={route.lastDeliveryTime}
+                      status={route.status}
+                      statusText={route.statusText}
+                      stops={route.stops}
+                      driverIndex={index}
+                    />
+                  </SortableContext>
+                </div>
+              ));
+            })()}
           </div>
         </DndContext>
       </main>
