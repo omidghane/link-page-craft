@@ -22,6 +22,7 @@ const Dashboard = () => {
   const { rows, vehs, loading, error } = useSeedData();
   const [activeId, setActiveId] = useState(null);
   const [driverRoutes, setDriverRoutes] = useState([]);
+  const [activeStop, setActiveStop] = useState(null);
 
   useEffect(() => {
     if (!rows || !vehs || rows.length === 0 || vehs.length === 0) return;
@@ -66,12 +67,22 @@ const Dashboard = () => {
   );
 
   const handleDragStart = (event: any) => {
-    setActiveId(event.active.id);
+    const { active } = event;
+    setActiveId(active.id);
+    
+    const activeData = active.data.current;
+    if (activeData) {
+      const route = driverRoutes[activeData.driverIndex];
+      if (route) {
+        setActiveStop(route.stops[activeData.stopIndex]);
+      }
+    }
   };
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     setActiveId(null);
+    setActiveStop(null);
 
     if (!over) return;
 
@@ -258,6 +269,32 @@ const Dashboard = () => {
               ));
             })()}
           </div>
+          
+          <DragOverlay>
+            {activeId && activeStop ? (
+              <div className="bg-card border border-border rounded-lg p-2 shadow-lg opacity-90">
+                <div className="flex items-start gap-3 text-xs">
+                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
+                    {activeStop.order}
+                  </div>
+                  <div className="flex-1 flex gap-4 items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-muted-foreground">شناسه:</span>
+                      <span className="font-mono font-medium text-[10px]">{activeStop.customerId}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-muted-foreground">حرکت:</span>
+                      <span className="font-medium text-[10px]">{activeStop.departureTime}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-muted-foreground">رسیدن:</span>
+                      <span className="font-medium text-[10px]">{activeStop.arrivalTime}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </main>
     </div>
