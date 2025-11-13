@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Input } from "./ui/input";
 
 interface RouteStop {
   order: number;
@@ -19,6 +20,7 @@ interface DriverRouteCardProps {
   statusText: string;
   stops: RouteStop[];
   driverIndex: number;
+  onDriverNameChange: (newName: string) => void;
 }
 
 const DraggableStop = ({
@@ -73,7 +75,7 @@ const DraggableStop = ({
           <div className="flex gap-4 items-center">
             <div className="flex items-center gap-1">
               <span className="font-medium text-[10px]">{stop.departureTime}</span>
-              <span className="text-[9px] text-muted-foreground">→</span>
+              <span className="text-[9px] text-muted-foreground">←</span>
               <span className="font-medium text-[10px]">{stop.arrivalTime}</span>
             </div>
           </div>
@@ -108,13 +110,19 @@ export const DriverRouteCard = ({
   statusText,
   stops,
   driverIndex,
+  onDriverNameChange,
 }: DriverRouteCardProps) => {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="bg-muted/50 border-b border-border p-3 pb-2">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold">{driverName}</h3>
+            {/* <h3 className="text-sm font-bold">{driverName}</h3> */}
+            <Input
+              value={driverName}
+              onChange={(e) => onDriverNameChange(e.target.value)}
+              className="h-7 px-2 py-1 text-xs font-bold"
+            />
             <Badge className={`text-xs ${getStatusColor(status)}`}>
               {statusText}
             </Badge>

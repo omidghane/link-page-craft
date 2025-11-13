@@ -31,47 +31,60 @@ const Dashboard = () => {
   useEffect(() => {
     if (!rows || !vehs || rows.length === 0 || vehs.length === 0) return;
 
-    const updatedDriverRoutes = vehs
-      .map((vehicle, vehicleIndex) => {
-        // همه stopها (شامل 0)
-        const allStops = vehicle.map((customerId, stopIndex) => {
-          const customerRow = rows.find((row) => row.id === customerId);
+    setDriverRoutes((prevRoutes) => {
+      const updatedDriverRoutes = vehs
+        .map((vehicle, vehicleIndex) => {
+          // همه stopها (شامل 0)
+          const allStops = vehicle.map((customerId, stopIndex) => {
+            const customerRow = rows.find((row) => row.id === customerId);
+
+            return {
+              order: stopIndex + 1,
+              customerId: customerRow?.id ?? 0,
+              departureTime: customerRow?.start_service
+                ? safeMinToHHMM(customerRow.start_service)
+                : "--:--",
+              arrivalTime: customerRow?.finish_service
+                ? safeMinToHHMM(customerRow.finish_service)
+                : "--:--",
+            };
+          });
+
+          const stops = allStops
+            .filter((stop) => stop.customerId !== 0)
+            .map((stop, idx) => ({
+              ...stop,
+              order: idx + 1,
+            }));
+
+          if (stops.length === 0) return null;
+
+          // 👈 اگر قبلاً اسمی برای این راننده داشتیم، همونو نگه دار
+          const previousName = prevRoutes[vehicleIndex]?.driverName;
 
           return {
-            order: stopIndex + 1, // بعداً دوباره ست می‌کنیم
-            customerId: customerRow?.id ?? 0,
-            departureTime: customerRow?.start_service
-              ? safeMinToHHMM(customerRow.start_service)
-              : "--:--",
-            arrivalTime: customerRow?.finish_service
-              ? safeMinToHHMM(customerRow.finish_service)
-              : "--:--",
+            driverName: previousName ?? `Driver ${vehicleIndex + 1}`,
+            departureTime: "08:00",
+            lastDeliveryTime: stops[stops.length - 1]?.arrivalTime || "--:--",
+            status: prevRoutes[vehicleIndex]?.status ?? "pending",
+            statusText: prevRoutes[vehicleIndex]?.statusText ?? "منتظر",
+            stops,
           };
-        });
+        })
+        .filter((route) => route !== null);
 
-        // 🔴 اینجا stopهای با شناسه 0 رو کامل حذف می‌کنیم
-        const stops = allStops
-          .filter((stop) => stop.customerId !== 0)
-          .map((stop, idx) => ({
-            ...stop,
-            order: idx + 1, // ترتیب جدید بعد از فیلتر
-          }));
-
-        return {
-          driverName: `Driver ${vehicleIndex + 1}`,
-          departureTime: stops[0]?.departureTime || "--:--",
-          lastDeliveryTime: stops[stops.length - 1]?.arrivalTime || "--:--",
-          status: "pending",
-          statusText: "منتظر",
-          stops,
-        };
-      })
-      // راننده‌هایی که هیچ stop واقعی ندارن حذف بشن
-      .filter((route) => route.stops.length > 0);
-
-    setDriverRoutes(updatedDriverRoutes);
+      return updatedDriverRoutes as typeof prevRoutes;
+    });
   }, [rows, vehs]);
 
+  const handleDriverNameChange = (driverIndex: number, newName: string) => {
+    setDriverRoutes((routes) =>
+      routes.map((route, idx) =>
+        idx === driverIndex ? { ...route, driverName: newName } : route
+      )
+    );
+  };
+  
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -284,9 +297,7 @@ const Dashboard = () => {
               return driverRoutes.map((route, driverIndex) => (
                 <div key={driverIndex} className="flex-shrink-0 w-48">
                   <SortableContext
-                    items={route.stops.map(
-                      (_, stopIndex) => `${driverIndex}-${stopIndex}`
-                    )}
+                    items={route.stops.map((_, stopIndex) => `${driverIndex}-${stopIndex}`)}
                     strategy={verticalListSortingStrategy}
                   >
                     <DriverRouteCard
@@ -297,10 +308,14 @@ const Dashboard = () => {
                       statusText={route.statusText}
                       stops={route.stops}
                       driverIndex={driverIndex}
+                      onDriverNameChange={(newName) =>
+                        handleDriverNameChange(driverIndex, newName)
+                      }
                     />
                   </SortableContext>
                 </div>
               ));
+              
             })()}
           </div>
 
