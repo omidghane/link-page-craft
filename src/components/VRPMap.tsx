@@ -287,59 +287,51 @@ export default function VRPMap() {
         }
 
         // helper to request all route geometries via Celery: enqueue then poll all tasks
-        // const fetchAllGeoms = async () => {
-        //   // 1) enqueue all tasks and collect task ids
-        //   let enqSuccessCount = 0;
-        //   const enqTotal = (vehicles || []).length;
-        //   const startPromises = (vehicles || []).map((route) =>
-        //     API.post("/api/route-geometry", {
-        //       route,
-        //       routeKey: getRouteKey(route),
-        //     })
-        //       .then((r) => {
-        //         const taskId = r.data?.task_id || r.data?.task?.id;
-        //         if (taskId) {
-        //           enqSuccessCount += 1;
-        //           console.log(
-        //             `Enqueued ${enqSuccessCount}/${enqTotal} /api/route-geometry requests succeeded so far`
-        //           );
-        //         }
-        //         return {
-        //           taskId,
-        //           error: r.data?.error,
-        //         };
-        //       })
-        //       .catch((e) => ({
-        //         taskId: null,
-        //         error: e?.message || "enqueue error",
-        //       }))
-        //   );
+        const fetchAllGeoms = async () => {
+        let enqSuccessCount = 0;
+        const enqTotal = (vehicles || []).length;
 
-        //   const starts = await Promise.all(startPromises);
+        const results = [];
 
-        //   // 2) poll each task (or return immediate error if enqueue failed)
-        //   const pollPromises = starts.map((s) => {
-        //     if (!s.taskId) {
-        //       return Promise.resolve({
-        //         points: [],
-        //         distance_m: 0,
-        //         error: s.error || "no task id",
-        //       });
-        //     }
-        //     return pollTask(s.taskId, {
-        //       interval: 1000,
-        //       timeout: 120000,
-        //       signal: { aborted: cancelled },
-        //     }).catch((e) => ({
-        //       points: [],
-        //       distance_m: 0,
-        //       error: e?.message || "poll error",
-        //     }));
-        //   });
+        for (const route of vehicles || []) {
+            try {
+            console.log(`Sending request for route: ${route}`);
+            const response = await API.post("/api/route-geometry", {
+                route,
+                routeKey: getRouteKey(route),
+            });
 
-        //   // Wait for all polls to finish and return aligned array
-        //   return Promise.all(pollPromises);
-        // };
+            const { points, distance_m, error } = response.data || {};
+
+            if (error) {
+                console.error(`Error for route ${route}: ${error}`);
+                results.push({
+                points: [],
+                distance_m: 0,
+                error,
+                });
+            } else {
+                enqSuccessCount += 1;
+                console.log(
+                `Processed ${enqSuccessCount}/${enqTotal} /api/route-geometry requests successfully`
+                );
+                results.push({
+                points: points || [],
+                distance_m: Number(distance_m || 0),
+                });
+            }
+            } catch (e) {
+            console.error(`Request failed for route ${route}:`, e?.message || e);
+            results.push({
+                points: [],
+                distance_m: 0,
+                error: e?.message || "request error",
+            });
+            }
+        }
+
+        return results;
+        };
 
         // --- enqueue tasks once (do not re-enqueue on retry) ---
         // track how many POSTs to /api/route-geometry have succeeded so far

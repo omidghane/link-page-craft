@@ -10,10 +10,14 @@ import {
   DragOverlay,
   closestCorners,
   PointerSensor,
-  useSensor, 
+  useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useSeedData } from "../hooks/useSeedData";
 
 const VRPMap = React.lazy(() => import("@/components/VRPMap"));
@@ -27,33 +31,43 @@ const Dashboard = () => {
   useEffect(() => {
     if (!rows || !vehs || rows.length === 0 || vehs.length === 0) return;
 
-    // Map vehs to driverRoutes
-    const updatedDriverRoutes = vehs.map((vehicle, vehicleIndex) => {
-      const stops = vehicle.map((customerId, stopIndex) => {
-        // Find the corresponding row for the customer
-        const customerRow = rows.find((row) => row.id === customerId);
+    const updatedDriverRoutes = vehs
+      .map((vehicle, vehicleIndex) => {
+        // همه stopها (شامل 0)
+        const allStops = vehicle.map((customerId, stopIndex) => {
+          const customerRow = rows.find((row) => row.id === customerId);
+
+          return {
+            order: stopIndex + 1, // بعداً دوباره ست می‌کنیم
+            customerId: customerRow?.id ?? 0,
+            departureTime: customerRow?.start_service
+              ? safeMinToHHMM(customerRow.start_service)
+              : "--:--",
+            arrivalTime: customerRow?.finish_service
+              ? safeMinToHHMM(customerRow.finish_service)
+              : "--:--",
+          };
+        });
+
+        // 🔴 اینجا stopهای با شناسه 0 رو کامل حذف می‌کنیم
+        const stops = allStops
+          .filter((stop) => stop.customerId !== 0)
+          .map((stop, idx) => ({
+            ...stop,
+            order: idx + 1, // ترتیب جدید بعد از فیلتر
+          }));
 
         return {
-          order: stopIndex + 1,
-          customerId: customerRow?.id ,
-          departureTime: customerRow?.start_service
-            ? safeMinToHHMM(customerRow.start_service)
-            : "--:--",
-          arrivalTime: customerRow?.finish_service
-            ? safeMinToHHMM(customerRow.finish_service)
-            : "--:--",
+          driverName: `Driver ${vehicleIndex + 1}`,
+          departureTime: stops[0]?.departureTime || "--:--",
+          lastDeliveryTime: stops[stops.length - 1]?.arrivalTime || "--:--",
+          status: "pending",
+          statusText: "منتظر",
+          stops,
         };
-      });
-
-      return {
-        driverName: `Driver ${vehicleIndex + 1}`, // Placeholder driver name
-        departureTime: stops[0]?.departureTime || "--:--",
-        lastDeliveryTime: stops[stops.length - 1]?.arrivalTime || "--:--",
-        status: "pending", // Default status
-        statusText: "منتظر", // Default status text
-        stops,
-      };
-    });
+      })
+      // راننده‌هایی که هیچ stop واقعی ندارن حذف بشن
+      .filter((route) => route.stops.length > 0);
 
     setDriverRoutes(updatedDriverRoutes);
   }, [rows, vehs]);
@@ -68,12 +82,15 @@ const Dashboard = () => {
 
   const handleDragStart = (event: any) => {
     const { active } = event;
+    console.log("Drag started. Active ID:", active.id);
     setActiveId(active.id);
-    
+
     const activeData = active.data.current;
+    console.log("Active data on drag start:", activeData);
     if (activeData) {
       const route = driverRoutes[activeData.driverIndex];
       if (route) {
+        console.log("Setting activeStop:", route.stops[activeData.stopIndex]);
         setActiveStop(route.stops[activeData.stopIndex]);
       }
     }
@@ -81,54 +98,62 @@ const Dashboard = () => {
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
+    console.log("Drag ended. Active ID:", active.id, "Over ID:", over?.id);
     setActiveId(null);
     setActiveStop(null);
 
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      console.log("No valid drop target or dropped on itself. Exiting.");
+      return;
+    }
 
     const activeData = active.data.current;
     const overData = over.data.current;
 
-    if (!activeData || !overData) return;
+    console.log("Active data on drag end:", activeData);
+    console.log("Over data on drag end:", overData);
+
+    if (!activeData || !overData) {
+      console.log("Missing active or over data. Exiting.");
+      return;
+    }
 
     const activeDriverIndex = activeData.driverIndex;
     const activeStopIndex = activeData.stopIndex;
     const overDriverIndex = overData.driverIndex;
     const overStopIndex = overData.stopIndex;
 
-    if (activeDriverIndex === overDriverIndex) {
-      // Reorder within same driver using arrayMove for correct positioning
-      if (activeStopIndex !== overStopIndex) {
-        setDriverRoutes((routes) => {
-          const newRoutes = [...routes];
-          const stops = arrayMove(
-            newRoutes[activeDriverIndex].stops,
-            activeStopIndex,
-            overStopIndex
-          );
-          
-          // Update order numbers
-          stops.forEach((stop: any, idx) => {
-            stop.order = idx + 1;
-          });
-          
-          newRoutes[activeDriverIndex] = {
-            ...newRoutes[activeDriverIndex],
-            stops,
-          };
-          return newRoutes;
+    console.log(
+      `Moving stop from driver ${activeDriverIndex}, index ${activeStopIndex} to driver ${overDriverIndex}, index ${overStopIndex}`
+    );
+
+    setDriverRoutes((routes) => {
+      const newRoutes = [...routes];
+
+      if (activeDriverIndex === overDriverIndex) {
+        // Reorder within the same driver
+        const stops = [...newRoutes[activeDriverIndex].stops];
+        const [movedStop] = stops.splice(activeStopIndex, 1); // Remove the dragged stop
+        stops.splice(overStopIndex, 0, movedStop); // Insert it at the target position
+
+        // Update order numbers
+        stops.forEach((stop, idx) => {
+          stop.order = idx + 1;
         });
-      }
-    } else {
-      // Move between drivers
-      setDriverRoutes((routes) => {
-        const newRoutes = [...routes];
+
+        newRoutes[activeDriverIndex] = {
+          ...newRoutes[activeDriverIndex],
+          stops,
+        };
+        console.log("Reordered stops within the same driver:", stops);
+      } else {
+        // Move between drivers
         const sourceStops = [...newRoutes[activeDriverIndex].stops];
         const destStops = [...newRoutes[overDriverIndex].stops];
-        
-        const [movedStop] = sourceStops.splice(activeStopIndex, 1);
-        destStops.splice(overStopIndex, 0, movedStop);
-        
+
+        const [movedStop] = sourceStops.splice(activeStopIndex, 1); // Remove the dragged stop
+        destStops.splice(overStopIndex, 0, movedStop); // Insert it at the target position
+
         // Update order numbers for both routes
         sourceStops.forEach((stop, idx) => {
           stop.order = idx + 1;
@@ -136,7 +161,7 @@ const Dashboard = () => {
         destStops.forEach((stop, idx) => {
           stop.order = idx + 1;
         });
-        
+
         newRoutes[activeDriverIndex] = {
           ...newRoutes[activeDriverIndex],
           stops: sourceStops,
@@ -145,12 +170,15 @@ const Dashboard = () => {
           ...newRoutes[overDriverIndex],
           stops: destStops,
         };
-        
-        return newRoutes;
-      });
-    }
-  };
+        console.log("Moved stop between drivers.");
+        console.log("Source stops after move:", sourceStops);
+        console.log("Destination stops after move:", destStops);
+      }
 
+      console.log("Updated driverRoutes after drag end:", newRoutes);
+      return newRoutes;
+    });
+  };
 
   // Example usage:
   if (loading) return <div>Loading seed data...</div>;
@@ -162,7 +190,7 @@ const Dashboard = () => {
       {/* <div className="container mx-auto px-4">
         <VRPMap />
       </div> */}
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">نتایج بهینه سازی مسیر</h1>
@@ -228,33 +256,37 @@ const Dashboard = () => {
             {(() => {
               // console.log("Driver Routes (before filtering):", JSON.stringify(driverRoutes, null, 2)); // Log the full driverRoutes array
 
-              const filteredRoutes = driverRoutes.map((route) => {
-                // Filter out stops with customerId === 0
-                const validStops = route.stops.filter((stop) => {
-                  // console.log(`Checking stop: ${JSON.stringify(stop)}`); // Log each stop
-                  return stop.customerId !== 0; // Keep only valid stops
-                });
+              const filteredRoutes = driverRoutes
+                .map((route) => {
+                  // Filter out stops with customerId === 0
+                  const validStops = route.stops.filter((stop) => {
+                    // console.log(`Checking stop: ${JSON.stringify(stop)}`); // Log each stop
+                    return stop.customerId !== 0; // Keep only valid stops
+                  });
 
-                // Re-number the orders after filtering to start from 1
-                const reorderedStops = validStops.map((stop, idx) => ({
-                  ...stop,
-                  order: idx + 1
-                }));
+                  // Re-number the orders after filtering to start from 1
+                  const reorderedStops = validStops.map((stop, idx) => ({
+                    ...stop,
+                    order: idx + 1,
+                  }));
 
-                // console.log(`Route "${route.driverName}" valid stops:`, validStops);
+                  // console.log(`Route "${route.driverName}" valid stops:`, validStops);
 
-                return {
-                  ...route,
-                  stops: reorderedStops, // Replace stops with reordered stops
-                };
-              }).filter((route) => route.stops.length > 0); // Keep only routes with valid stops
+                  return {
+                    ...route,
+                    stops: reorderedStops, // Replace stops with reordered stops
+                  };
+                })
+                .filter((route) => route.stops.length > 0); // Keep only routes with valid stops
 
               // console.log("Filtered Routes (excluding stops with id 0):", JSON.stringify(filteredRoutes, null, 2)); // Log the filtered routes
 
-              return filteredRoutes.map((route, index) => (
-                <div key={index} className="flex-shrink-0 w-48">
+              return driverRoutes.map((route, driverIndex) => (
+                <div key={driverIndex} className="flex-shrink-0 w-48">
                   <SortableContext
-                    items={route.stops.map((_, idx) => `${index}-${idx}`)}
+                    items={route.stops.map(
+                      (_, stopIndex) => `${driverIndex}-${stopIndex}`
+                    )}
                     strategy={verticalListSortingStrategy}
                   >
                     <DriverRouteCard
@@ -264,14 +296,14 @@ const Dashboard = () => {
                       status={route.status}
                       statusText={route.statusText}
                       stops={route.stops}
-                      driverIndex={index}
+                      driverIndex={driverIndex}
                     />
                   </SortableContext>
                 </div>
               ));
             })()}
           </div>
-          
+
           <DragOverlay>
             {activeId && activeStop ? (
               <div className="bg-card border border-border rounded-lg p-2 shadow-lg opacity-90">
@@ -281,16 +313,28 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 flex gap-4 items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] text-muted-foreground">شناسه:</span>
-                      <span className="font-mono font-medium text-[10px]">{activeStop.customerId}</span>
+                      <span className="text-[9px] text-muted-foreground">
+                        شناسه:
+                      </span>
+                      <span className="font-mono font-medium text-[10px]">
+                        {activeStop.customerId}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] text-muted-foreground">حرکت:</span>
-                      <span className="font-medium text-[10px]">{activeStop.departureTime}</span>
+                      <span className="text-[9px] text-muted-foreground">
+                        حرکت:
+                      </span>
+                      <span className="font-medium text-[10px]">
+                        {activeStop.departureTime}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] text-muted-foreground">رسیدن:</span>
-                      <span className="font-medium text-[10px]">{activeStop.arrivalTime}</span>
+                      <span className="text-[9px] text-muted-foreground">
+                        رسیدن:
+                      </span>
+                      <span className="font-medium text-[10px]">
+                        {activeStop.arrivalTime}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -309,7 +353,10 @@ function safeMinToHHMM(value) {
     if (value === null || value === undefined) return "--:--";
     const hours = Math.floor(value / 60);
     const minutes = Math.floor(value % 60);
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}`;
   } catch {
     return "--:--";
   }
