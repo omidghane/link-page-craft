@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import delinexLogo from "@/assets/delinex-logo.png";
 
 const ExcelPreview = () => {
@@ -48,29 +48,32 @@ const ExcelPreview = () => {
 
         {/* Table */}
         <div className="bg-card rounded-lg shadow-xl border border-border overflow-hidden">
-          <ScrollArea className="h-[calc(100vh-200px)]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {headers.map((header, index) => (
-                    <TableHead key={index} className="font-bold text-center whitespace-nowrap">
-                      {header}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {excelData.map((row, rowIndex) => (
-                  <TableRow key={rowIndex}>
-                    {headers.map((header, cellIndex) => (
-                      <TableCell key={cellIndex} className="text-center whitespace-nowrap">
-                        {row[header] !== null && row[header] !== undefined ? String(row[header]) : ""}
-                      </TableCell>
+          <ScrollArea className="h-[calc(100vh-200px)] w-full">
+            <div className="w-max min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {headers.map((header, index) => (
+                      <TableHead key={index} className="font-bold text-center whitespace-nowrap px-4 min-w-[150px]">
+                        {header}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {excelData.map((row, rowIndex) => (
+                    <TableRow key={rowIndex}>
+                      {headers.map((header, cellIndex) => (
+                        <TableCell key={cellIndex} className="text-center whitespace-nowrap px-4 min-w-[150px]">
+                          {row[header] !== null && row[header] !== undefined ? String(row[header]) : ""}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
 
