@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload } from "lucide-react";
+import { Upload, Eye, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import delinexLogo from "@/assets/delinex-logo.png";
 
 const UploadCustomer = () => {
@@ -32,9 +33,42 @@ const UploadCustomer = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const parseExcelFile = (file: File): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          resolve(jsonData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsBinaryString(file);
+    });
+  };
+
+  const handlePreview = async () => {
+    if (!file) {
+      toast.error("لطفاً یک فایل اکسل انتخاب کنید");
+      return;
+    }
+
+    try {
+      const data = await parseExcelFile(file);
+      localStorage.setItem("uploadedExcelData", JSON.stringify(data));
+      navigate("/excel-preview");
+    } catch (error) {
+      toast.error("خطا در خواندن فایل اکسل");
+    }
+  };
+
+  const handleRunModel = async () => {
     if (!file) {
       toast.error("لطفاً یک فایل اکسل انتخاب کنید");
       return;
@@ -45,17 +79,23 @@ const UploadCustomer = () => {
       return;
     }
 
-    localStorage.setItem(
-      "depotLocation",
-      JSON.stringify({
-        latitude: parseFloat(formData.depotLatitude),
-        longitude: parseFloat(formData.depotLongitude),
-      })
-    );
+    try {
+      const data = await parseExcelFile(file);
+      localStorage.setItem("uploadedExcelData", JSON.stringify(data));
+      
+      localStorage.setItem(
+        "depotLocation",
+        JSON.stringify({
+          latitude: parseFloat(formData.depotLatitude),
+          longitude: parseFloat(formData.depotLongitude),
+        })
+      );
 
-    // Process the upload
-    toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
-    navigate("/dashboard");
+      toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error("خطا در پردازش فایل اکسل");
+    }
   };
 
   return (
@@ -70,7 +110,7 @@ const UploadCustomer = () => {
 
           <h2 className="text-3xl font-bold text-center mb-8">بارگذاری فایل اکسل مشتریان</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             {/* Excel File Upload */}
             <div className="space-y-2">
               <Label htmlFor="excel-file" className="text-base font-semibold">
@@ -193,16 +233,29 @@ const UploadCustomer = () => {
               />
             </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-14 text-lg font-semibold"
-              size="lg"
-            >
-              <Upload className="ml-2 h-5 w-5" />
-              بارگذاری
-            </Button>
-          </form>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              <Button
+                type="button"
+                onClick={handlePreview}
+                variant="outline"
+                className="h-14 text-lg font-semibold"
+                size="lg"
+              >
+                <Eye className="ml-2 h-5 w-5" />
+                پیش‌نمایش فایل
+              </Button>
+              <Button
+                type="button"
+                onClick={handleRunModel}
+                className="h-14 text-lg font-semibold"
+                size="lg"
+              >
+                <Play className="ml-2 h-5 w-5" />
+                اجرای مدل
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
