@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import delinexLogo from "@/assets/delinex-logo.png";
+import { api } from "@/lib/api";
+import { Console } from "console";
 
 const UploadCustomer = () => {
   const navigate = useNavigate();
@@ -66,7 +68,7 @@ const UploadCustomer = () => {
     } catch (error) {
       toast.error("خطا در خواندن فایل اکسل");
     }
-  };
+  }; 
 
   const handleRunModel = async () => {
     if (!file) {
@@ -90,6 +92,23 @@ const UploadCustomer = () => {
           longitude: parseFloat(formData.depotLongitude),
         })
       );
+
+      const params = {
+        depotLatitude: parseFloat(formData.depotLatitude),
+        depotLongitude: parseFloat(formData.depotLongitude),
+        startTime: formData.startTime,
+        finishTime: formData.finishTime,
+        maxCapacity: Number(formData.maxCapacity),
+        ...(formData.numVehicles
+          ? { numVehicles: Number(formData.numVehicles) }
+          : {}),
+      };
+      const res = await api.post("/api/map/seed", params);
+      
+      const { df, vehicles } = res.data;
+      
+      localStorage.setItem("seedDf", JSON.stringify(df));
+      localStorage.setItem("seedVehicles", JSON.stringify(vehicles));
 
       toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
       navigate("/dashboard");

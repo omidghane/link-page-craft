@@ -150,6 +150,13 @@ export default function VRPMap() {
 
   // assigned & unassigned customers
   const { assigned, unassigned } = useMemo(() => {
+    if (!Array.isArray(df) || df.length === 0) {
+      return {
+        assigned: new Set<number>(),
+        unassigned: [] as number[],
+      };
+    }
+    
     const assignedSet = new Set<number>();
     (vehicles || []).forEach((route) =>
       route.forEach((id) => assignedSet.add(id))
@@ -659,7 +666,7 @@ export default function VRPMap() {
       )}
 
       {/* Simple distances log like your Python printout */}
-      <DistanceLog geoms={geoms} />
+      {/* <DistanceLog geoms={geoms} /> */}
     </div>
   );
 }

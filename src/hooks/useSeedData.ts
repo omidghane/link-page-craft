@@ -1,38 +1,54 @@
+// hooks/useSeedData.ts
 import { useEffect, useState } from "react";
-import axios from "axios";
 
-const API = axios.create({
-  baseURL: "http://localhost:3000",
-  timeout: 120000,
-});
-
-export function useSeedData() {
-  const [rows, setRows] = useState<any[]>([]);
-  const [vehs, setVehs] = useState<number[][]>([]);
+export const useSeedData = () => {
+  const [rows, setRows] = useState<any[] | null>(null);
+  const [vehs, setVehs] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    async function fetchSeed() {
-      setLoading(true);
-      setError(null);
+    const loadData = async () => {
       try {
-        const seed = await API.get("/api/map/seed");
-        if (cancelled) return;
-        setRows(seed.data?.df || []);
-        setVehs(seed.data?.vehicles || []);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to fetch seed data");
-      } finally {
-        if (!cancelled) setLoading(false);
+        // 1) اول از localStorage بخوان
+        const storedDf = localStorage.getItem("seedDf");
+        const storedVehicles = localStorage.getItem("seedVehicles");
+
+        if (storedDf && storedVehicles) {
+          setRows(JSON.parse(storedDf));
+          setVehs(JSON.parse(storedVehicles));
+          setLoading(false);
+          return;
+        }
+
+        // 2) اگر چیزی در localStorage نبود، می‌توانی:
+        //    - یا ارور بدهی که اول باید فایل را آپلود کنند
+        //    - یا fallback: API را صدا بزنی
+        // من هر دو حالت را نشان می‌دهم:
+
+        // ❌ حالت فقط ارور:
+        setError("No seed data found. Please upload customers file first.");
+        setLoading(false);
+
+        // ✅ اگر می‌خواهی fallback کنی، این بخش را باز کن:
+        /*
+        const res = await api.get("/api/map/seed");
+        const { df, vehicles } = res.data;
+        setRows(df);
+        setVehs(vehicles);
+        localStorage.setItem("seedDf", JSON.stringify(df));
+        localStorage.setItem("seedVehicles", JSON.stringify(vehicles));
+        setLoading(false);
+        */
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load seed data");
+        setLoading(false);
       }
-    }
-    fetchSeed();
-    return () => {
-      cancelled = true;
     };
+
+    loadData();
   }, []);
 
   return { rows, vehs, loading, error };
-}
+};
