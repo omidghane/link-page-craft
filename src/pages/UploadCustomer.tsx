@@ -63,6 +63,7 @@ const UploadCustomer = () => {
 
     try {
       const data = await parseExcelFile(file);
+      console.log(data);
       localStorage.setItem("uploadedExcelData", JSON.stringify(data));
       navigate("/excel-preview");
     } catch (error) {
@@ -83,6 +84,7 @@ const UploadCustomer = () => {
 
     try {
       const data = await parseExcelFile(file);
+      console.log(data);
       localStorage.setItem("uploadedExcelData", JSON.stringify(data));
       
       localStorage.setItem(
@@ -103,12 +105,14 @@ const UploadCustomer = () => {
           ? { numVehicles: Number(formData.numVehicles) }
           : {}),
       };
+      console.log("Request Params:", params);
       const res = await api.post("/api/map/seed", params);
       
       const { df, vehicles } = res.data;
       
       localStorage.setItem("seedDf", JSON.stringify(df));
       localStorage.setItem("seedVehicles", JSON.stringify(vehicles));
+      console.log("API Response:", df);
 
       toast.success("اطلاعات مشتری با موفقیت بارگذاری شد!");
       navigate("/dashboard");

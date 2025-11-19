@@ -10,6 +10,7 @@ import UploadCustomer from "./pages/UploadCustomer";
 import ExcelPreview from "./pages/ExcelPreview";
 import Test from "./pages/Test";
 import NotFound from "./pages/NotFound";
+import DriverDashboard from "./pages/DriverDashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/upload-customer" element={<UploadCustomer />} />
           <Route path="/excel-preview" element={<ExcelPreview />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/driver-dashboard" element={<DriverDashboard />} />
           <Route path="/test" element={<Test />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

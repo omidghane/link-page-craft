@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient"; // ✅ new import
+import {
+  USERS_TABLE,
+  persistDriverSession,
+  clearDriverSession,
+} from "@/lib/driverSession";
+import { fetchDriverRoutesWithCustomerDetails } from "@/lib/driverRoutes";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,7 +26,7 @@ const Login = () => {
 
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
@@ -36,12 +42,69 @@ const Login = () => {
         return;
       }
 
-      if (data.session) {
-        toast.success("ورود موفق!");
-        navigate("/upload-customer");
-      } else {
+      if (!data.session) {
         toast.error("ورود ناموفق. لطفاً دوباره تلاش کنید.");
+        return;
       }
+
+      const signedInEmail = data.user?.email ?? email;
+      if (!signedInEmail) {
+        toast.error("ایمیل کاربر یافت نشد");
+        return;
+      }
+
+      const { data: userProfile, error: userProfileError } = await supabase
+        .from(USERS_TABLE)
+        .select("role, company")
+        .eq("email", signedInEmail)
+        .maybeSingle();
+
+      if (userProfileError) {
+        console.error("Failed to fetch user profile", userProfileError);
+        toast.error("امکان دریافت مشخصات کاربر وجود ندارد");
+      }
+
+      const normalizedRole = (userProfile?.role ?? "").toLowerCase();
+
+      if (normalizedRole === "driver") {
+        if (!userProfile?.company) {
+          toast.error("شرکت مرتبط با راننده یافت نشد");
+          return;
+        }
+
+        let formattedRoutes;
+        try {
+          formattedRoutes = await fetchDriverRoutesWithCustomerDetails(
+            signedInEmail,
+            userProfile.company
+          );
+        } catch (routeError) {
+          console.error("Failed to build driver routes", routeError);
+          toast.error("امکان دریافت مسیرهای راننده وجود ندارد");
+          return;
+        }
+
+        const driverProfilePayload = {
+          email: signedInEmail,
+          company: userProfile.company,
+        };
+
+        persistDriverSession(driverProfilePayload, formattedRoutes);
+
+        toast.success("ورود موفق!");
+        navigate("/driver-dashboard", {
+          state: {
+            driverRoutes: formattedRoutes,
+            driverProfile: driverProfilePayload,
+          },
+          replace: true,
+        });
+        return;
+      }
+
+      clearDriverSession();
+      toast.success("ورود موفق!");
+      navigate("/upload-customer");
     } catch (err) {
       console.error(err);
       toast.error("خطای غیرمنتظره. لطفاً دوباره تلاش کنید.");

@@ -3,8 +3,17 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Download } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  Save,
+  BarChart3,
+} from "lucide-react";
 import { DriverRouteCard } from "@/components/DriverRouteCard";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 import {
   DndContext,
   DragOverlay,
@@ -22,11 +31,17 @@ import { useSeedData } from "../hooks/useSeedData";
 
 const VRPMap = React.lazy(() => import("@/components/VRPMap"));
 
+const normalizeCoordinate = (value: any) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
 const Dashboard = () => {
   const { rows, vehs, loading, error } = useSeedData();
   const [activeId, setActiveId] = useState(null);
   const [driverRoutes, setDriverRoutes] = useState([]);
   const [activeStop, setActiveStop] = useState(null);
+  const [isSavingAssignments, setIsSavingAssignments] = useState(false);
 
   useEffect(() => {
     if (!rows || !vehs || rows.length === 0 || vehs.length === 0) return;
@@ -37,6 +52,38 @@ const Dashboard = () => {
           // همه stopها (شامل 0)
           const allStops = vehicle.map((customerId, stopIndex) => {
             const customerRow = rows.find((row) => row.id === customerId);
+            const customerName =
+              customerRow?.CustomerName ||
+              customerRow?.customer_name ||
+              customerRow?.customerName ||
+              "";
+            const address =
+              customerRow?.Address ||
+              customerRow?.address ||
+              customerRow?.CustomerAddress ||
+              "";
+            const latitude = normalizeCoordinate(
+              customerRow?.Latitude ??
+                customerRow?.latitude ??
+                customerRow?.Lat ??
+                customerRow?.lat
+            );
+            const longitude = normalizeCoordinate(
+              customerRow?.Longitude ??
+                customerRow?.longitude ??
+                customerRow?.Lon ??
+                customerRow?.lon
+            );
+            const serviceTime =
+              customerRow?.ServiceTime ??
+              customerRow?.service_time ??
+              customerRow?.serviceTime ??
+              null;
+            const customerTimeWindow =
+              customerRow?.CustomerTimeWindow ??
+              customerRow?.customer_time_window ??
+              customerRow?.customerTimeWindow ??
+              null;
 
             return {
               order: stopIndex + 1,
@@ -47,6 +94,12 @@ const Dashboard = () => {
               arrivalTime: customerRow?.finish_service
                 ? safeMinToHHMM(customerRow.finish_service)
                 : "--:--",
+              customerName,
+              address,
+              latitude,
+              longitude,
+              serviceTime,
+              customerTimeWindow,
             };
           });
 
@@ -83,6 +136,107 @@ const Dashboard = () => {
         idx === driverIndex ? { ...route, driverName: newName } : route
       )
     );
+  };
+
+  const handleSaveDriverAssignments = async () => {
+    if (!driverRoutes.length) {
+      toast.error("مسیر فعالی برای ذخیره وجود ندارد");
+      return;
+    }
+
+    type DriverCustomerRecord = {
+      customerId: number;
+      CustomerName: string;
+      Address: string;
+      Latitude: number | null;
+      Longitude: number | null;
+      ServiceTime: string | number | null;
+      CustomerTimeWindow: string | null;
+    };
+
+    type DriverAssignmentPayload = {
+      driverName: string;
+      route: number[];
+      company: string;
+    };
+
+    type DriverPayloadBundle = {
+      driverName: string;
+      company: string;
+      routeIds: number[];
+      customers: DriverCustomerRecord[];
+    };
+
+    const driverBundles: DriverPayloadBundle[] = driverRoutes
+      .map((route, driverIndex) => {
+        const stopsWithDetails: DriverCustomerRecord[] = (route?.stops ?? [])
+          .map((stop) => {
+            const customerId = Number(stop.customerId ?? 0);
+            if (!Number.isFinite(customerId) || customerId === 0) {
+              return null;
+            }
+
+            return {
+              customerId,
+              CustomerName: stop.customerName || "",
+              Address: stop.address || "",
+              Latitude: normalizeCoordinate(stop.latitude),
+              Longitude: normalizeCoordinate(stop.longitude),
+              ServiceTime: stop.serviceTime ?? null,
+              CustomerTimeWindow: stop.customerTimeWindow ?? null,
+            } as DriverCustomerRecord;
+          })
+          .filter((stop): stop is DriverCustomerRecord => Boolean(stop));
+
+        if (!stopsWithDetails.length) return null;
+
+        return {
+          driverName: route?.driverName || `Driver ${driverIndex + 1}`,
+          company: "Milanpars Pharmed",
+          routeIds: stopsWithDetails.map((stop) => stop.customerId),
+          customers: stopsWithDetails,
+        };
+      })
+      .filter((bundle): bundle is DriverPayloadBundle => Boolean(bundle));
+
+    const assignments: DriverAssignmentPayload[] = driverBundles.map(
+      (bundle) => ({
+        driverName: bundle.driverName,
+        route: bundle.routeIds,
+        company: bundle.company,
+      })
+    );
+
+    const flattenedCustomers: DriverCustomerRecord[] = driverBundles.flatMap(
+      (bundle) => bundle.customers
+    );
+
+    const customerDetailsPayload = {
+      company: "Milanpars Pharmed",
+      customers: flattenedCustomers,
+    };
+
+    if (!assignments.length) {
+      toast.error("هیچ مسیری برای ارسال به سرور یافت نشد");
+      return;
+    }
+    // console.log("Assignments to be sent:", assignments);
+    console.log("Customer details to be sent:", customerDetailsPayload);
+
+    try {
+      setIsSavingAssignments(true);
+      await api.post("/api/map/driver-assignments", assignments );
+
+      if (customerDetailsPayload.customers.length) {
+        await api.post("/api/customers", customerDetailsPayload);
+      }
+      toast.success("تخصیص راننده ها با موفقیت ذخیره شد");
+    } catch (err) {
+      console.error("Failed to save driver assignments", err);
+      toast.error("خطا در ذخیره تخصیص راننده ها");
+    } finally {
+      setIsSavingAssignments(false);
+    }
   };
   
   const sensors = useSensors(
@@ -200,9 +354,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
-      <div className="container mx-auto px-4">
+      {/* <div className="container mx-auto px-4">
         <VRPMap />
-      </div>
+      </div> */}
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -357,6 +511,26 @@ const Dashboard = () => {
             ) : null}
           </DragOverlay>
         </DndContext>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-start">
+          <Button className="sm:min-w-[170px] gap-2">
+            <RefreshCw className="h-4 w-4" />
+            اعمال تغییرات مسیر
+          </Button>
+          <Button
+            variant="outline"
+            className="sm:min-w-[170px] gap-2"
+            onClick={handleSaveDriverAssignments}
+            disabled={isSavingAssignments}
+          >
+            <Save className="h-4 w-4" />
+            {isSavingAssignments ? "در حال ذخیره..." : "ذخیره تخصیص راننده ها"}
+          </Button>
+          <Button variant="outline" className="sm:min-w-[170px] gap-2">
+            <BarChart3 className="h-4 w-4" />
+            مشاهده آمار
+          </Button>
+        </div>
       </main>
     </div>
   );
