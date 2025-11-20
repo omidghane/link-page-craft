@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import delinexLogo from "@/assets/delinex-logo.png";
+import delinexLogo from "@/assets/delinex-logo.jpg";
 import { api } from "@/lib/api";
 import { Console } from "console";
 

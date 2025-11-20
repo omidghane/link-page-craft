@@ -21,6 +21,7 @@ const API = axios.create({
 
 // --- import the shared hook ---
 import { useSeedData } from "../hooks/useSeedData";
+import { DriverRoute } from "@/lib/driverSession";
 
 // --- Utils (ported) -------------------------------------------------
 
@@ -105,7 +106,11 @@ const unassignedIcon = L.icon({
  * You will implement these in Python.
  */
 
-export default function VRPMap() {
+type VRPMapProps = {
+  driverRoutes?: DriverRoute[];
+};
+
+export default function VRPMap({ driverRoutes }: VRPMapProps = {}) {
   // --- use the shared hook instead of local API call ---
   const {
     rows: df,
@@ -171,6 +176,7 @@ export default function VRPMap() {
 
   // initial load: df + vehicles, then fetch geometries (points/dist) per vehicle
   useEffect(() => {
+    if (driverRoutes?.length) return; // driver dashboard renders custom map
     let cancelled = false;
 
     async function load() {
@@ -474,11 +480,15 @@ export default function VRPMap() {
       }
     }
     load();
-    
+
     return () => {
       cancelled = true;
     };
-  }, [df, vehicles]); // depend on hook values
+  }, [df, vehicles, driverRoutes]); // depend on hook values
+
+  if (driverRoutes?.length) {
+    return <DriverRoutesMap routes={driverRoutes} />;
+  }
 
   if (seedLoading || loadingGeoms) {
     return (
@@ -670,6 +680,130 @@ export default function VRPMap() {
     </div>
   );
 }
+
+const DriverRoutesMap = ({ routes }: { routes: DriverRoute[] }) => {
+  const allStops = routes.flatMap((route) => route.stops || []);
+  const validStops = allStops.filter(
+    (stop) =>
+      stop.latitude !== null &&
+      stop.longitude !== null &&
+      Number.isFinite(Number(stop.latitude)) &&
+      Number.isFinite(Number(stop.longitude))
+  );
+
+  const center: [number, number] = validStops.length
+    ? [Number(validStops[0].latitude), Number(validStops[0].longitude)]
+    : [35.6892, 51.389];
+
+  return (
+    <div
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <header style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <h2 style={{ margin: 0 }}>نقشه مسیر راننده</h2>
+      </header>
+      {validStops.length ? (
+        <MapContainer
+          center={center as L.LatLngExpression}
+          zoom={11}
+          style={{ height: "75vh", width: "100%", borderRadius: 8 }}
+        >
+          <TileLayer
+            attribution={"&copy; OpenStreetMap" as any}
+            url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" as any}
+          />
+
+          <LayersControl position={"topright" as any}>
+            {routes.map((route, idx) => {
+              const color = TAB20[idx % TAB20.length];
+              const positions = (route.stops || [])
+                .filter(
+                  (stop) =>
+                    stop.latitude !== null &&
+                    stop.longitude !== null
+                )
+                .map(
+                  (stop) =>
+                    [Number(stop.latitude), Number(stop.longitude)] as L.LatLngExpression
+                );
+
+              return (
+                <LayersControl.Overlay
+                  key={`driver-route-${idx}`}
+                  name={`مسیر ${idx + 1}`}
+                  checked
+                >
+                  <LayerGroup>
+                    {positions.length > 1 && (
+                      <Polyline
+                        positions={positions}
+                        pathOptions={{ color, weight: 5, opacity: 0.9 }}
+                      />
+                    )}
+
+                    {(route.stops || []).map((stop, stopIdx) => {
+                      if (
+                        stop.latitude === null ||
+                        stop.longitude === null
+                      ) {
+                        return null;
+                      }
+
+                      return (
+                        <Marker
+                          key={`${route.id}-${stop.id}`}
+                          position={
+                            [
+                              Number(stop.latitude),
+                              Number(stop.longitude),
+                            ] as L.LatLngExpression
+                          }
+                          icon={
+                            stopIndexIcon(color, String(stop.order ?? stopIdx + 1))
+                          }
+                        >
+                          <Popup maxWidth={320 as any}>
+                            <div style={{ fontSize: 13 }}>
+                              <b>مشتری:</b> {stop.customerName || stop.id}
+                              <br />
+                              <b>آدرس:</b> {stop.address || "بدون آدرس"}
+                              <br />
+                              <b>مختصات:</b> {stop.latitude}, {stop.longitude}
+                              <br />
+                              <b>Service:</b> {stop.serviceTime ?? "نامشخص"}
+                              <br />
+                              <b>Window:</b> {stop.customerTimeWindow ?? "--"}
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    })}
+                  </LayerGroup>
+                </LayersControl.Overlay>
+              );
+            })}
+          </LayersControl>
+        </MapContainer>
+      ) : (
+        <div
+          style={{
+            height: "75vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span>مختصات معتبری برای نمایش روی نقشه یافت نشد.</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // POST to backend to assign a customer (stub; implement server-side)
 async function assignCustomer(customerId: any) {

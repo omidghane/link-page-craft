@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import delinexLogo from "@/assets/delinex-logo.png";
+import delinexLogo from "@/assets/delinex-logo.jpg";
 
 const ExcelPreview = () => {
   const navigate = useNavigate();

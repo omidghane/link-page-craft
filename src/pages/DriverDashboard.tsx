@@ -387,9 +387,9 @@ const DriverDashboard = () => {
               </div>
             }
           >
-            {/* <div className="h-[420px] rounded-xl overflow-hidden border border-border bg-muted/30">
-              <VRPMap />
-            </div> */}
+            <div className="h-[420px] rounded-xl overflow-hidden border border-border bg-muted/30">
+              <VRPMap driverRoutes={routes} />
+            </div>
           </Suspense>
         </div>
       </div>
