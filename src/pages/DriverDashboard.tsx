@@ -329,8 +329,18 @@ const DriverDashboard = () => {
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-4 text-[11px] text-muted-foreground">
-                              <span>Lat: {stop.latitude ?? "-"}</span>
-                              <span>Lon: {stop.longitude ?? "-"}</span>
+                              {stop.latitude !== null && stop.longitude !== null ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${stop.latitude},${stop.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  مشاهده روی نقشه ({stop.latitude}, {stop.longitude})
+                                </a>
+                              ) : (
+                                <span>مختصات ثبت نشده</span>
+                              )}
                               <span>
                                 Service: {stop.serviceTime ?? "نامشخص"}
                               </span>
