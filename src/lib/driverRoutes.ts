@@ -40,18 +40,68 @@ export const fetchDriverRoutesWithCustomerDetails = async (
   driverEmail: string,
   company: string
 ): Promise<DriverRoute[]> => {
-  const { data: driverRows, error: driverError } = await supabase
-    .from(DRIVER_VEHICLE_TABLE)
-    .select('id, route, "driver-email"')
-    .eq("driver-email", driverEmail)
-    .eq("company", company);
+  console.log("[driverRoutes] Fetching routes", { driverEmail, company });
 
-  if (driverError) {
-    throw driverError;
+  const vehicleTables = Array.from(
+    new Set([DRIVER_VEHICLE_TABLE, "Vehicle", "Vehicle"])
+  ).filter(Boolean);
+  // const vehicleTables = "Vehicle";
+
+  let driverRows: any[] | null = null;
+  let usedVehicleTable: string | null = null;
+  let lastError: unknown = null;
+
+  for (const tableName of vehicleTables) {
+    try {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select("id, route, driver_email")
+        .eq("driver_email", driverEmail)
+        .eq("company", company);
+
+      if (error) {
+        lastError = error;
+        console.warn(
+          "[driverRoutes] Query failed for table", tableName,
+          error
+        );
+        continue;
+      }
+
+      driverRows = data ?? [];
+      usedVehicleTable = tableName;
+      console.log(
+        "[driverRoutes] Vehicle rows response",
+        tableName,
+        driverRows
+      );
+      if (driverRows.length) {
+        break;
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn("[driverRoutes] Unexpected error for table", tableName, err);
+    }
+  }
+
+  if (!driverRows) {
+    if (lastError) {
+      throw lastError;
+    }
+    driverRows = [];
+  }
+
+  if (!usedVehicleTable) {
+    console.warn(
+      "[driverRoutes] No vehicle table returned data",
+      vehicleTables
+    );
+  } else {
+    console.log("[driverRoutes] Using vehicle table", usedVehicleTable);
   }
 
   const routeRecords = (driverRows ?? []).map((row, idx) => {
-    const routeIds = normalizeRoute(row?.route) 
+    const routeIds = normalizeRoute(row?.route)
       .map((value) => Number(value))
       .filter((value) => Number.isFinite(value) && value !== 0) as number[];
 
@@ -66,6 +116,8 @@ export const fetchDriverRoutesWithCustomerDetails = async (
     new Set(routeRecords.flatMap((record) => record.routeIds))
   );
 
+  console.log("[driverRoutes] Unique customer IDs", uniqueCustomerIds);
+
   const customersLookup = new Map<number, any>();
 
   if (uniqueCustomerIds.length) {
@@ -77,8 +129,14 @@ export const fetchDriverRoutesWithCustomerDetails = async (
       .in("id", uniqueCustomerIds);
 
     if (customersError) {
+      console.error(
+        "[driverRoutes] Supabase error while fetching customers",
+        customersError
+      );
       throw customersError;
     }
+
+    console.log("[driverRoutes] Customer rows response", customers);
 
     (customers ?? []).forEach((customer) => {
       if (customer?.id !== undefined && customer?.id !== null) {
@@ -92,13 +150,15 @@ export const fetchDriverRoutesWithCustomerDetails = async (
 
     return {
       id: record.row?.id ?? record.idx,
-      name: record.row?.["driver-email"] ?? `مسیر ${record.idx + 1}`,
+      name: record.row?.driver_email ?? `مسیر ${record.idx + 1}`,
       departure: "--:--",
       arrival: "--:--",
       status: "در انتظار",
       stops,
     };
   });
+
+  console.log("[driverRoutes] Formatted routes result", formattedRoutes);
 
   return formattedRoutes;
 };

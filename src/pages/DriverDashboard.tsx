@@ -114,10 +114,12 @@ const DriverDashboard = () => {
           throw new Error("شرکت مرتبط با راننده یافت نشد");
         }
 
+        console.log("[DriverDashboard] Loading routes for", signedInEmail);
         const formattedRoutes = await fetchDriverRoutesWithCustomerDetails(
           signedInEmail,
           userProfile.company
         );
+        console.log("[DriverDashboard] Routes fetched", formattedRoutes);
 
         const driverProfilePayload: DriverProfile = {
           email: signedInEmail,
