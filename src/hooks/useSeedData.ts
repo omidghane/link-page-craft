@@ -1,9 +1,11 @@
 // hooks/useSeedData.ts
+import { set } from "date-fns";
 import { useEffect, useState } from "react";
 
 export const useSeedData = () => {
   const [rows, setRows] = useState<any[] | null>(null);
   const [vehs, setVehs] = useState<any[] | null>(null);
+  const [uploadedExcelData, setUploadedExcelData] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,11 +14,13 @@ export const useSeedData = () => {
       try {
         // 1) اول از localStorage بخوان
         const storedDf = localStorage.getItem("seedDf");
+        const uploadedExcelData = localStorage.getItem("uploadedExcelData");
         const storedVehicles = localStorage.getItem("seedVehicles");
 
-        if (storedDf && storedVehicles) {
+        if (storedDf && storedVehicles && uploadedExcelData) {
           setRows(JSON.parse(storedDf));
           setVehs(JSON.parse(storedVehicles));
+          setUploadedExcelData(JSON.parse(uploadedExcelData));
           setLoading(false);
           return;
         }
@@ -50,5 +54,5 @@ export const useSeedData = () => {
     loadData();
   }, []);
 
-  return { rows, vehs, loading, error };
+  return { rows, vehs, uploadedExcelData, loading, error };
 };

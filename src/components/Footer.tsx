@@ -1,5 +1,6 @@
 import { Package } from "lucide-react";
 import { Link } from "react-router-dom";
+import delinexLogo from "@/assets/delinex-logo2.jpg";
 
 export const Footer = () => {
   return (
@@ -8,9 +9,14 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="bg-primary rounded-lg p-1.5">
+              {/* <div className="bg-primary rounded-lg p-1.5">
                 <Package className="h-5 w-5 text-primary-foreground" />
-              </div>
+              </div> */}
+              <img
+                src={delinexLogo}
+                alt="Delinex Logo"
+                className="h-12 w-auto object-contain mx-auto drop-shadow"
+              />
               <span className="text-lg font-bold">Delinex</span>
             </div>
             <p className="text-sm text-muted-foreground">

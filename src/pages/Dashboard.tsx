@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
@@ -37,11 +37,31 @@ const normalizeCoordinate = (value: any) => {
 };
 
 const Dashboard = () => {
-  const { rows, vehs, loading, error } = useSeedData();
+  const { rows, vehs, uploadedExcelData, loading, error } = useSeedData();
   const [activeId, setActiveId] = useState(null);
   const [driverRoutes, setDriverRoutes] = useState([]);
   const [activeStop, setActiveStop] = useState(null);
   const [isSavingAssignments, setIsSavingAssignments] = useState(false);
+
+  const uploadedAddressLookup = useMemo(() => {
+    const map = new Map<number, string>();
+    if (!uploadedExcelData || !Array.isArray(uploadedExcelData)) return map;
+
+    uploadedExcelData.forEach((entry: any) => {
+      const id = Number(
+        entry?.CustomerId ?? entry?.customerId ?? entry?.id ?? entry?.ID
+      );
+      if (!Number.isFinite(id)) return;
+      const addr =
+        entry?.Address ??
+        "";
+      if (addr) {
+        map.set(id, String(addr));
+      }
+    });
+
+    return map;
+  }, [uploadedExcelData]);
 
   useEffect(() => {
     if (!rows || !vehs || rows.length === 0 || vehs.length === 0) return;
@@ -179,7 +199,8 @@ const Dashboard = () => {
             return {
               customerId,
               CustomerName: stop.customerName || "",
-              Address: stop.address || "",
+              Address:
+                uploadedAddressLookup.get(customerId) || stop.address || "",
               Latitude: normalizeCoordinate(stop.latitude),
               Longitude: normalizeCoordinate(stop.longitude),
               ServiceTime: stop.serviceTime ?? null,
@@ -354,9 +375,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       <DashboardHeader />
-      <div className="container mx-auto px-4">
+      {/* <div className="container mx-auto px-4">
         <VRPMap />
-      </div>
+      </div> */}
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

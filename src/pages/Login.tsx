@@ -13,6 +13,7 @@ import {
   clearDriverSession,
 } from "@/lib/driverSession";
 import { fetchDriverRoutesWithCustomerDetails } from "@/lib/driverRoutes";
+import delinexLogo from "@/assets/delinex-logo2.jpg";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -155,9 +156,14 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl shadow-xl border border-border p-8 animate-fade-in">
           <div className="flex flex-col items-center mb-8">
-            <div className="bg-primary rounded-xl p-3 mb-4">
+            {/* <div className="bg-primary rounded-xl p-3 mb-4">
               <Package className="h-10 w-10 text-primary-foreground" />
-            </div>
+            </div> */}
+            <img
+              src={delinexLogo}
+              alt="Delinex Logo"
+              className="h-12 w-auto object-contain mx-auto drop-shadow"
+            />
             <h1 className="text-2xl font-bold text-primary">Delinex</h1>
           </div>
 

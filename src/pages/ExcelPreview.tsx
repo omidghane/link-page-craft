@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import delinexLogo from "@/assets/delinex-logo.jpg";
+import delinexLogo from "@/assets/delinex-logo2.jpg";
 
 const ExcelPreview = () => {
   const navigate = useNavigate();
@@ -37,7 +37,11 @@ const ExcelPreview = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <img src={delinexLogo} alt="Delinex Logo" className="h-16" />
+            <img
+              src={delinexLogo}
+              alt="Delinex Logo"
+              className="h-12 w-auto object-contain mx-auto drop-shadow"
+            />
             <h1 className="text-3xl font-bold">پیش‌نمایش فایل اکسل</h1>
           </div>
           <Button onClick={() => navigate("/upload-customer")} variant="outline">

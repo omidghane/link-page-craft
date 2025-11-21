@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import { Button } from "./ui/button";
+import delinexLogo from "@/assets/delinex-logo2.jpg";
 
 export const Header = () => {
   return (
@@ -8,9 +9,14 @@ export const Header = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="bg-primary rounded-lg p-1.5">
+            {/* <div className="bg-primary rounded-lg p-1.5">
               <Package className="h-6 w-6 text-primary-foreground" />
-            </div>
+            </div> */}
+            <img
+                src={delinexLogo}
+                alt="Delinex Logo"
+                className="h-12 w-auto object-contain mx-auto"
+              />
             <span className="text-xl font-bold">Delinex</span>
           </Link>
           

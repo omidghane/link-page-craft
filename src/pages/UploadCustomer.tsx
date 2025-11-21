@@ -128,7 +128,7 @@ const UploadCustomer = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <img src={delinexLogo} alt="Delinex Logo" className="h-24 mx-auto mb-2" />
-            <p className="text-muted-foreground italic">Next Generation of Logistics</p>
+            {/* <p className="text-muted-foreground italic">Next Generation of Logistics</p> */}
           </div>
 
           <h2 className="text-3xl font-bold text-center mb-8">بارگذاری فایل اکسل مشتریان</h2>
